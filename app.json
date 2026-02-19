@@ -1,0 +1,86 @@
+{
+  "expo": {
+    "name": "ALIVE Connection",
+    "slug": "alive-connection",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "alive",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.xrx.aliveconnection",
+      "associatedDomains": [
+        "applinks:alive-connection.app"
+      ],
+      "infoPlist": {
+        "NFCReaderUsageDescription": "ALIVE Connection uses NFC to exchange contact information seamlessly.",
+        "NSLocationWhenInUseUsageDescription": "We use your location to remember where you met your connections.",
+        "NSMicrophoneUsageDescription": "Record voice memos about your new connections."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.xrx.aliveconnection",
+      "permissions": [
+        "android.permission.NFC",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "intentFilters": [
+        {
+          "action": "android.nfc.action.NDEF_DISCOVERED",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "alive-connection.app",
+              "pathPrefix": "/connect"
+            }
+          ],
+          "category": [
+            "android.intent.category.DEFAULT"
+          ]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "alive-connection.app",
+              "pathPrefix": "/connect"
+            }
+          ],
+          "category": [
+            "android.intent.category.DEFAULT",
+            "android.intent.category.BROWSABLE"
+          ]
+        }
+      ]
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "We use your location to remember where you met your connections."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    }
+  }
+}
