@@ -718,15 +718,504 @@ section {
 .cross { color: var(--text-muted); }
 
 /* ============================================
-   Section 4: Architecture
+   Section 4: Architecture — Comprehensive Redesign
    ============================================ */
-.arch-layers {
+
+/* --- Architecture Sub-Navigation Tabs --- */
+.arch-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 40px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+.arch-tabs::-webkit-scrollbar { display: none; }
+.arch-tab {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s;
+  user-select: none;
+}
+.arch-tab:hover {
+  color: var(--text);
+  border-color: var(--alive-emerald-glow);
+  background: var(--surface-hover);
+}
+.arch-tab.active {
+  color: var(--deep-navy);
+  background: linear-gradient(135deg, var(--alive-emerald), var(--accent-cyan));
+  border-color: transparent;
+  font-weight: 700;
+}
+
+/* --- Architecture Panel Visibility --- */
+.arch-panel {
+  display: none;
+  animation: archPanelIn 0.4s ease;
+}
+.arch-panel.active {
+  display: block;
+}
+@keyframes archPanelIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- 1. System Overview Diagram --- */
+.sys-arch-diagram {
+  position: relative;
+  padding: 32px 0;
+}
+.sys-arch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+.sys-arch-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: relative;
+  transition: all 0.3s;
+}
+.sys-arch-box:hover {
+  border-color: var(--alive-emerald-glow);
+  box-shadow: 0 0 24px rgba(0, 212, 170, 0.06);
+  transform: translateY(-2px);
+}
+.sys-arch-box.full-width {
+  grid-column: 1 / -1;
+}
+.sys-arch-box-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sys-arch-box-label .dot-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sys-arch-box-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.sys-arch-box-tech {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  margin-bottom: 12px;
+}
+.sys-arch-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.sys-arch-module {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: var(--deep-navy);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* Architecture connection arrows (SVG overlay) */
+.sys-arch-arrows {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Connection legend */
+.arch-legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+.arch-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.arch-legend-line {
+  width: 24px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* --- 2. Phone-to-Phone Data Flow Diagram --- */
+.phone-flow-container {
+  position: relative;
+  padding: 20px 0;
+}
+
+/* Phase Timeline Header */
+.flow-phases {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.flow-phase-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+}
+.flow-phase-chip .phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Main Phone Diagram Area */
+.phone-flow-diagram {
+  display: grid;
+  grid-template-columns: 140px 1fr 140px;
+  gap: 0;
+  max-width: 880px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Phone Towers */
+.phone-tower {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 40px;
+  align-items: center;
+  gap: 0;
 }
-.arch-layer {
+.phone-device {
+  width: 100px;
+  height: 180px;
+  border: 2px solid var(--border-light);
+  border-radius: 16px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  gap: 6px;
+}
+.phone-device::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  width: 32px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-light);
+}
+.phone-device .phone-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+.phone-device .phone-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+}
+.phone-user-label {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+}
+.phone-user-sub {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Flow Steps (Center column) */
+.flow-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 8px;
+}
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+  position: relative;
+}
+.flow-step:hover {
+  border-color: var(--alive-emerald-glow);
+  transform: scale(1.01);
+}
+.flow-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  color: var(--deep-navy);
+}
+.flow-step-content {
+  flex: 1;
+  min-width: 0;
+}
+.flow-step-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.flow-step-desc {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.flow-step-arrow {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-family: var(--mono);
+}
+
+/* Direction indicators */
+.flow-step .dir-right::after {
+  content: '→';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  opacity: 0.3;
+}
+.flow-step .dir-left::after {
+  content: '←';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  opacity: 0.3;
+}
+
+/* Color coding for flow steps */
+.flow-step.color-nfc { border-left: 3px solid #10B981; }
+.flow-step.color-nfc .flow-step-num { background: #10B981; }
+.flow-step.color-ble { border-left: 3px solid #3B82F6; }
+.flow-step.color-ble .flow-step-num { background: #3B82F6; }
+.flow-step.color-server { border-left: 3px solid var(--accent-cyan); }
+.flow-step.color-server .flow-step-num { background: var(--accent-cyan); }
+.flow-step.color-alive { border-left: 3px solid var(--alive-emerald); }
+.flow-step.color-alive .flow-step-num { background: var(--alive-emerald); }
+.flow-step.color-ui { border-left: 3px solid #A78BFA; }
+.flow-step.color-ui .flow-step-num { background: #A78BFA; }
+
+/* Animated dash line between steps */
+@keyframes flowDash {
+  0% { stroke-dashoffset: 20; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Phase separator */
+.flow-phase-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  padding: 0 14px;
+}
+.flow-phase-divider .divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.flow-phase-divider .divider-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* --- 3. State Machine Diagram --- */
+.state-machine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 32px 16px;
+  flex-wrap: wrap;
+  overflow-x: auto;
+}
+.state-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.state-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 2px solid var(--border-light);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.state-circle:hover {
+  border-color: var(--alive-emerald);
+  box-shadow: 0 0 20px var(--alive-emerald-glow);
+}
+.state-circle .state-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.state-circle .state-name {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.state-circle.state-active {
+  border-color: var(--alive-emerald);
+  background: var(--alive-emerald-dim);
+  box-shadow: 0 0 24px var(--alive-emerald-glow);
+}
+.state-circle.state-active .state-name {
+  color: var(--alive-emerald);
+}
+.state-transition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 6px;
+}
+.state-transition-arrow {
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--border-light), var(--alive-emerald), var(--border-light));
+  position: relative;
+}
+.state-transition-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid var(--alive-emerald);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.state-transition-label {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* State machine wrapper card */
+.state-machine-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 32px;
+}
+.state-machine-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.state-machine-desc {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+/* --- 4. Enhanced 3-Layer Architecture --- */
+.arch-layers-v2 {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  margin-bottom: 32px;
+}
+
+/* Vertical connector line */
+.arch-layers-v2::before {
+  content: '';
+  position: absolute;
+  left: 50px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #3B82F6, var(--alive-emerald), var(--accent-cyan));
+  z-index: 0;
+}
+
+.arch-layer-v2 {
   display: flex;
   align-items: stretch;
   gap: 0;
@@ -734,83 +1223,456 @@ section {
   overflow: hidden;
   border: 1px solid var(--border);
   transition: all 0.3s;
+  margin-bottom: 16px;
+  position: relative;
+  z-index: 1;
 }
-.arch-layer:hover {
+.arch-layer-v2:hover {
   border-color: var(--alive-emerald-glow);
+  box-shadow: 0 0 32px rgba(0, 212, 170, 0.06);
   transform: translateX(4px);
 }
-.arch-layer-badge {
+.arch-layer-v2-badge {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px 24px;
+  padding: 20px 20px;
   min-width: 100px;
-  font-size: 1.5rem;
-  gap: 8px;
+  gap: 6px;
 }
-.arch-layer-badge .layer-num {
-  font-size: 0.7rem;
+.arch-layer-v2-badge .layer-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.arch-layer-v2-badge .layer-num {
+  font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  opacity: 0.8;
+  opacity: 0.9;
 }
-.arch-layer.layer-1 .arch-layer-badge {
+.arch-layer-v2.layer-ble .arch-layer-v2-badge {
   background: linear-gradient(135deg, #3B82F6, #2563EB);
   color: white;
 }
-.arch-layer.layer-2 .arch-layer-badge {
+.arch-layer-v2.layer-server .arch-layer-v2-badge {
   background: linear-gradient(135deg, var(--alive-emerald), #059669);
   color: var(--deep-navy);
 }
-.arch-layer.layer-3 .arch-layer-badge {
+.arch-layer-v2.layer-nfc .arch-layer-v2-badge {
   background: linear-gradient(135deg, var(--accent-cyan), #0284C7);
   color: var(--deep-navy);
 }
-.arch-layer-content {
+.arch-layer-v2-content {
   flex: 1;
-  padding: 20px 28px;
+  padding: 20px 24px;
   background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.arch-layer-title {
+.arch-layer-v2-title {
   font-weight: 700;
-  font-size: 1.05rem;
-  margin-bottom: 4px;
+  font-size: 1rem;
+  margin-bottom: 2px;
 }
-.arch-layer-subtitle {
-  font-size: 0.8rem;
+.arch-layer-v2-subtitle {
+  font-size: 0.78rem;
   color: var(--text-muted);
   font-weight: 500;
-  margin-bottom: 8px;
 }
-.arch-layer-desc {
-  font-size: 0.88rem;
+.arch-layer-v2-desc {
+  font-size: 0.85rem;
   color: var(--text-dim);
   line-height: 1.6;
 }
+.arch-layer-v2-data {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.arch-layer-v2-data .data-tag {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--deep-navy);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
 
-.arch-coordinator {
+/* ExchangeManager orchestrator (enhanced) */
+.arch-orchestrator {
   background: linear-gradient(135deg, var(--alive-emerald-dim), var(--accent-cyan-dim));
   border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 8px;
+}
+.arch-orchestrator-icon {
+  font-size: 2.2rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.arch-orchestrator-body {
+  flex: 1;
+}
+.arch-orchestrator-title {
+  font-weight: 800;
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+.arch-orchestrator-desc {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+.arch-orchestrator-methods {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.arch-orchestrator-methods .method-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(0, 212, 170, 0.12);
+  color: var(--alive-emerald);
+  font-family: var(--mono);
+}
+
+/* --- 5. Backend Data Model --- */
+.db-schema {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.db-table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px 32px;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+.db-table-card:hover {
+  border-color: var(--alive-emerald-glow);
+  box-shadow: 0 0 24px rgba(0, 212, 170, 0.06);
+}
+.db-table-header {
+  padding: 14px 20px;
+  background: var(--surface-hover);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
 }
-.arch-coordinator-icon {
-  font-size: 2.5rem;
-  flex-shrink: 0;
-}
-.arch-coordinator-text .coord-title {
-  font-weight: 700;
-  font-size: 1.05rem;
-  margin-bottom: 4px;
-}
-.arch-coordinator-text .coord-desc {
+.db-table-name {
+  font-weight: 800;
   font-size: 0.9rem;
+  font-family: var(--mono);
+  color: var(--alive-emerald);
+}
+.db-table-type {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--alive-emerald-dim);
+  color: var(--alive-emerald);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.db-columns {
+  padding: 0;
+  list-style: none;
+}
+.db-col {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  font-size: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.db-col:last-child {
+  border-bottom: none;
+}
+.db-col:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.db-col-name {
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text);
+  min-width: 140px;
+}
+.db-col-type {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  flex: 1;
+}
+.db-col-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.db-col-badge.pk {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning);
+}
+.db-col-badge.fk {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3B82F6;
+}
+.db-col-badge.jsonb {
+  background: rgba(167, 139, 250, 0.15);
+  color: #A78BFA;
+}
+
+/* DB relationship line */
+.db-relation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.db-relation-line {
+  flex: 1;
+  height: 1px;
+  max-width: 80px;
+  background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+}
+
+/* --- 6. Knowledge Graph Integration --- */
+.kg-integration {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.kg-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: all 0.3s;
+}
+.kg-card:hover {
+  border-color: var(--alive-emerald-glow);
+  box-shadow: 0 0 24px rgba(0, 212, 170, 0.06);
+}
+.kg-card.full-width {
+  grid-column: 1 / -1;
+}
+.kg-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mini graph visualization */
+.kg-mini-graph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 20px;
+}
+.kg-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.kg-node-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.kg-node-circle.person {
+  background: rgba(59, 130, 246, 0.15);
+  border: 2px solid #3B82F6;
+  color: #3B82F6;
+}
+.kg-node-circle.org {
+  background: rgba(245, 158, 11, 0.15);
+  border: 2px solid var(--warning);
+  color: var(--warning);
+}
+.kg-node-circle.topic {
+  background: rgba(167, 139, 250, 0.15);
+  border: 2px solid #A78BFA;
+  color: #A78BFA;
+}
+.kg-node-label {
+  font-size: 0.7rem;
+  font-weight: 600;
   color: var(--text-dim);
+}
+.kg-edge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 8px;
+}
+.kg-edge-line {
+  width: 48px;
+  height: 2px;
+  position: relative;
+}
+.kg-edge-line::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid currentColor;
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+.kg-edge-label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* KG flow list */
+.kg-flow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kg-flow-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.kg-flow-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--alive-emerald-dim);
+  color: var(--alive-emerald);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Zustand stores grid */
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.store-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.store-chip:hover {
+  border-color: var(--alive-emerald-glow);
+  background: var(--surface-hover);
+}
+.store-chip .store-icon {
+  font-size: 1rem;
+}
+.store-chip .store-name {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* Section divider */
+.arch-section-divider {
+  margin: 48px 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.arch-section-divider .divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.arch-section-divider .divider-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  white-space: nowrap;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Animated pulse for active elements */
+@keyframes archPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--alive-emerald-glow); }
+  50% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Flow connector animated dashes */
+@keyframes dashFlow {
+  0% { stroke-dashoffset: 12; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* Subsection title */
+.arch-subsection-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+.arch-subsection-desc {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  line-height: 1.6;
 }
 
 /* ============================================
@@ -1186,12 +2048,20 @@ section {
     to { opacity: 1; transform: translateY(0); }
   }
   .nav-hamburger { display: flex; }
-  .arch-layer { flex-direction: column; }
-  .arch-layer-badge {
-    flex-direction: row;
-    padding: 12px 20px;
-    min-width: auto;
-  }
+  /* Architecture v2 responsive (tablet) */
+  .sys-arch-grid { grid-template-columns: 1fr; }
+  .phone-flow-diagram { grid-template-columns: 1fr; }
+  .phone-tower { flex-direction: row; justify-content: center; margin-bottom: 16px; }
+  .phone-device { width: 80px; height: 140px; }
+  .flow-steps { padding: 0; }
+  .state-machine { gap: 4px; }
+  .state-circle { width: 64px; height: 64px; }
+  .state-transition-arrow { width: 24px; }
+  .arch-layer-v2 { flex-direction: column; }
+  .arch-layer-v2-badge { flex-direction: row; padding: 12px 20px; min-width: auto; }
+  .arch-layers-v2::before { display: none; }
+  .kg-integration { grid-template-columns: 1fr; }
+  .db-schema { grid-template-columns: 1fr; }
   .ecosystem-flow { flex-direction: column; }
   .eco-arrow { transform: rotate(90deg); }
 }
@@ -1201,7 +2071,21 @@ section {
   section { padding: 64px 0; }
   .hero-title { letter-spacing: -1.5px; }
   .overview-definition { padding: 24px; }
-  .arch-coordinator { flex-direction: column; text-align: center; }
+  /* Architecture v2 responsive (mobile) */
+  .arch-orchestrator { flex-direction: column; text-align: center; }
+  .phone-flow-diagram { grid-template-columns: 1fr; }
+  .phone-tower { display: none; }
+  .flow-phases { gap: 4px; }
+  .flow-phase-chip { font-size: 0.65rem; padding: 4px 8px; }
+  .state-machine { flex-direction: column; gap: 0; }
+  .state-transition { transform: rotate(90deg); padding: 4px 0; }
+  .state-transition-arrow { width: 30px; }
+  .arch-tabs { gap: 4px; }
+  .arch-tab { padding: 8px 12px; font-size: 0.75rem; }
+  .kg-mini-graph { flex-wrap: wrap; gap: 8px; }
+  .kg-edge-line { width: 32px; }
+  .kg-node-circle { width: 44px; height: 44px; font-size: 0.9rem; }
+  .stores-grid { grid-template-columns: 1fr; }
   .remaining-grid { grid-template-columns: 1fr; }
   .phase-cards { grid-template-columns: 1fr; }
 }
@@ -1219,11 +2103,14 @@ section {
     background: none;
   }
   section { padding: 40px 0; break-inside: avoid; }
-  .card, .stat-card, .dev-day, .remaining-card, .phase-card, .arch-layer {
+  .card, .stat-card, .dev-day, .remaining-card, .phase-card, .arch-layer-v2,
+  .sys-arch-box, .db-table-card, .kg-card, .state-machine-card, .flow-step {
     border-color: #ddd;
     background: white;
     box-shadow: none;
   }
+  .arch-panel { display: block !important; }
+  .arch-tabs { display: none; }
   .stat-value {
     -webkit-text-fill-color: #0a5e4d;
     background: none;
@@ -1232,6 +2119,89 @@ section {
   .file-tree { background: #f8f8f8; }
   .comparison-table .col-alive { background: #e8f9f4; }
   .fade-in { opacity: 1 !important; transform: none !important; }
+}
+
+/* ============================================
+   Three.js & PixiJS Visualization
+   ============================================ */
+.viz-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--deep-navy);
+  margin-bottom: 32px;
+}
+.viz-canvas-wrapper canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+.viz-canvas-label {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  pointer-events: none;
+  z-index: 2;
+}
+.viz-canvas-label-right {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+}
+#threeCanvas {
+  height: 420px;
+  cursor: grab;
+}
+#threeCanvas:active {
+  cursor: grabbing;
+}
+#pixiCanvas {
+  height: 340px;
+}
+.viz-overlay-info {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 2;
+  pointer-events: none;
+}
+.viz-info-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.viz-info-chip .chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  #threeCanvas { height: 280px; }
+  #pixiCanvas { height: 240px; }
 }
 </style>
 </head>
@@ -1467,59 +2437,802 @@ section {
 </section>
 
 <!-- ============================================
-     SECTION 4: ARCHITECTURE
+     SECTION 4: ARCHITECTURE (Comprehensive Redesign)
      ============================================ -->
 <section id="architecture">
   <div class="container">
     <div class="section-header fade-in">
       <div class="section-label">Architecture</div>
-      <h2 class="section-title">기술 아키텍처</h2>
-      <p class="section-subtitle">BLE Primary + Server Exchange + NFC Boost 3-Layer Hybrid Architecture</p>
+      <h2 class="section-title">&#xAE30;&#xC220; &#xC544;&#xD0A4;&#xD14D;&#xCC98;</h2>
+      <p class="section-subtitle">BLE + Server Exchange + NFC Boost &mdash; 3-Layer Hybrid Architecture&#xC758; &#xC804;&#xCCB4; &#xAD6C;&#xC131;&#xB3C4;, &#xB370;&#xC774;&#xD130; &#xD750;&#xB984;, &#xC0C1;&#xD0DC; &#xBA38;&#xC2E0;, &#xBC31;&#xC5D4;&#xB4DC; &#xBAA8;&#xB378;, &#xC9C0;&#xC2DD;&#xADF8;&#xB798;&#xD504; &#xD1B5;&#xD569;</p>
     </div>
 
-    <div class="arch-layers fade-in">
-      <div class="arch-layer layer-1">
-        <div class="arch-layer-badge">
-          <span style="font-size: 1.8rem;">&#x1F4E1;</span>
-          <span class="layer-num">Layer 1</span>
+    <!-- Architecture Tab Navigation -->
+    <div class="arch-tabs fade-in" id="archTabs">
+      <div class="arch-tab active" data-panel="panel-overview">&#xC804;&#xCCB4; &#xC2DC;&#xC2A4;&#xD15C; &#xAD6C;&#xC131;&#xB3C4;</div>
+      <div class="arch-tab" data-panel="panel-phone-flow">&#xD3F0; &#xB300; &#xD3F0; &#xB370;&#xC774;&#xD130; &#xD750;&#xB984;</div>
+      <div class="arch-tab" data-panel="panel-3layer">3-Layer &#xC0C1;&#xC138;</div>
+      <div class="arch-tab" data-panel="panel-data">&#xB370;&#xC774;&#xD130; &#xBAA8;&#xB378; &amp; &#xC9C0;&#xC2DD;&#xADF8;&#xB798;&#xD504;</div>
+    </div>
+
+    <!-- ============================
+         PANEL 1: System Architecture Overview
+         ============================ -->
+    <div class="arch-panel active" id="panel-overview">
+
+      <div class="arch-subsection-title fade-in">&#xC804;&#xCCB4; &#xC2DC;&#xC2A4;&#xD15C; &#xAD6C;&#xC131;&#xB3C4;</div>
+      <div class="arch-subsection-desc fade-in">&#xBAA8;&#xBC14;&#xC77C; &#xC571;&#xBD80;&#xD130; &#xC9C0;&#xC2DD;&#xADF8;&#xB798;&#xD504;&#xAE4C;&#xC9C0;, &#xC804;&#xCCB4; &#xCEF4;&#xD3EC;&#xB10C;&#xD2B8;&#xC758; &#xC5F0;&#xACB0; &#xAD00;&#xACC4;&#xB97C; &#xBCF4;&#xC5EC;&#xC90D;&#xB2C8;&#xB2E4;.</div>
+
+      <!-- Three.js 3D Network Graph -->
+      <div class="viz-canvas-wrapper fade-in" style="margin-bottom: 40px;">
+        <div id="threeCanvas"></div>
+        <div class="viz-overlay-info">
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #3B82F6;"></span> Mobile App</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #A78BFA;"></span> Web Dashboard</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #00B4D8;"></span> API Server</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #00D4AA;"></span> Supabase</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #F59E0B;"></span> ALIVE Engine</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #EF4444;"></span> Neo4j</div>
         </div>
-        <div class="arch-layer-content">
-          <div class="arch-layer-title">BLE Discovery (Primary)</div>
-          <div class="arch-layer-subtitle">Bluetooth Low Energy &mdash; 항상 활성</div>
-          <div class="arch-layer-desc">BLE 스캔 + 광고를 통한 기기 발견, 앱 보유 확인, userId 교환. RSSI 근접 필터(-50dBm)로 근거리 사용자만 감지. 5m 이내 자동 트리거.</div>
+        <div class="viz-canvas-label">3D System Architecture &#x2022; Interactive</div>
+        <div class="viz-canvas-label-right">&#x21BB; &#xB9C8;&#xC6B0;&#xC2A4; &#xB4DC;&#xB798;&#xADF8;&#xB85C; &#xD68C;&#xC804;</div>
+      </div>
+
+      <div class="sys-arch-grid fade-in">
+        <!-- Mobile App -->
+        <div class="sys-arch-box">
+          <div class="sys-arch-box-label" style="color: #3B82F6;">
+            <span class="dot-color" style="background: #3B82F6;"></span>
+            Frontend &mdash; Mobile
+          </div>
+          <div class="sys-arch-box-title">React Native + Expo 50</div>
+          <div class="sys-arch-box-tech">TypeScript &middot; Zustand &middot; AsyncStorage</div>
+          <div class="sys-arch-modules">
+            <span class="sys-arch-module">Screens</span>
+            <span class="sys-arch-module">Stores (5)</span>
+            <span class="sys-arch-module">Services</span>
+            <span class="sys-arch-module">Hooks</span>
+            <span class="sys-arch-module">BLE</span>
+            <span class="sys-arch-module">NFC/HCE</span>
+            <span class="sys-arch-module">ExchangeManager</span>
+          </div>
+        </div>
+
+        <!-- Web Dashboard -->
+        <div class="sys-arch-box">
+          <div class="sys-arch-box-label" style="color: #A78BFA;">
+            <span class="dot-color" style="background: #A78BFA;"></span>
+            Frontend &mdash; Web
+          </div>
+          <div class="sys-arch-box-title">React 19 + Vite 7</div>
+          <div class="sys-arch-box-tech">Tailwind CSS 4 &middot; Vercel</div>
+          <div class="sys-arch-modules">
+            <span class="sys-arch-module">Dashboard</span>
+            <span class="sys-arch-module">ALIVE Link</span>
+            <span class="sys-arch-module">vCard &#xB2E4;&#xC6B4;&#xB85C;&#xB4DC;</span>
+            <span class="sys-arch-module">&#xB525;&#xB9C1;&#xD06C;</span>
+          </div>
+        </div>
+
+        <!-- Backend API -->
+        <div class="sys-arch-box">
+          <div class="sys-arch-box-label" style="color: var(--accent-cyan);">
+            <span class="dot-color" style="background: var(--accent-cyan);"></span>
+            Backend API Server
+          </div>
+          <div class="sys-arch-box-title">Express.js + JWT</div>
+          <div class="sys-arch-box-tech">REST API &middot; AWS / Fly.io</div>
+          <div class="sys-arch-modules">
+            <span class="sys-arch-module">POST /exchange/request</span>
+            <span class="sys-arch-module">POST /exchange/accept</span>
+            <span class="sys-arch-module">GET /users/:id</span>
+            <span class="sys-arch-module">&#xC5ED;&#xC9C0;&#xC624;&#xCF54;&#xB529;</span>
+          </div>
+        </div>
+
+        <!-- Supabase -->
+        <div class="sys-arch-box">
+          <div class="sys-arch-box-label" style="color: var(--alive-emerald);">
+            <span class="dot-color" style="background: var(--alive-emerald);"></span>
+            Database &amp; Auth
+          </div>
+          <div class="sys-arch-box-title">Supabase</div>
+          <div class="sys-arch-box-tech">PostgreSQL &middot; Auth &middot; Storage &middot; Realtime</div>
+          <div class="sys-arch-modules">
+            <span class="sys-arch-module">users</span>
+            <span class="sys-arch-module">interactions</span>
+            <span class="sys-arch-module">profile_cards</span>
+            <span class="sys-arch-module">OAuth</span>
+            <span class="sys-arch-module">Row Level Security</span>
+          </div>
+        </div>
+
+        <!-- ALIVE Engine (full width) -->
+        <div class="sys-arch-box full-width" style="border-color: rgba(0, 212, 170, 0.2); background: linear-gradient(135deg, rgba(0, 212, 170, 0.04), rgba(0, 180, 216, 0.04));">
+          <div class="sys-arch-box-label" style="color: var(--alive-emerald);">
+            <span class="dot-color" style="background: var(--alive-emerald);"></span>
+            Knowledge Graph Engine
+          </div>
+          <div class="sys-arch-box-title">ALIVE Engine &mdash; FastAPI + Neo4j</div>
+          <div class="sys-arch-box-tech">&#xAD00;&#xACC4;&#xD615; AI &middot; 8 &#xB3C4;&#xBA54;&#xC778; &middot; 21 &#xB178;&#xB4DC; &#xD0C0;&#xC785; &middot; 37 &#xAD00;&#xACC4; &#xD0C0;&#xC785; &middot; OntologyHub.ai</div>
+          <div class="sys-arch-modules">
+            <span class="sys-arch-module">POST /beings/{id}/knowledge/nodes</span>
+            <span class="sys-arch-module">POST /beings/{id}/knowledge/edges</span>
+            <span class="sys-arch-module">GET /beings/{id}/knowledge/graph</span>
+            <span class="sys-arch-module">Person &#xB178;&#xB4DC;</span>
+            <span class="sys-arch-module">KNOWS &#xC5E3;&#xC9C0;</span>
+            <span class="sys-arch-module">&#xC5D4;&#xD2F0;&#xD2F0; &#xCD94;&#xCD9C;</span>
+          </div>
         </div>
       </div>
-      <div class="arch-layer layer-2">
-        <div class="arch-layer-badge">
-          <span style="font-size: 1.8rem;">&#x2601;&#xFE0F;</span>
-          <span class="layer-num">Layer 2</span>
+
+      <!-- Connection Legend -->
+      <div class="arch-legend fade-in">
+        <div class="arch-legend-item">
+          <span class="arch-legend-line" style="background: #3B82F6;"></span>
+          BLE/NFC (&#xADFC;&#xAC70;&#xB9AC; &#xD1B5;&#xC2E0;)
         </div>
-        <div class="arch-layer-content">
-          <div class="arch-layer-title">Server Exchange</div>
-          <div class="arch-layer-subtitle">Express.js + Supabase &mdash; 데이터 교환 핵심</div>
-          <div class="arch-layer-desc">프로필 데이터 교환, 만남 기록 저장, GPS 위치 태깅, 역지오코딩. JWT 인증 기반. 양측 동시 교환 보장.</div>
+        <div class="arch-legend-item">
+          <span class="arch-legend-line" style="background: var(--accent-cyan);"></span>
+          REST API (HTTP)
+        </div>
+        <div class="arch-legend-item">
+          <span class="arch-legend-line" style="background: var(--alive-emerald);"></span>
+          Knowledge Graph (ALIVE)
+        </div>
+        <div class="arch-legend-item">
+          <span class="arch-legend-line" style="background: #A78BFA;"></span>
+          &#xB525;&#xB9C1;&#xD06C; / &#xC6F9; &#xC5F0;&#xB3D9;
         </div>
       </div>
-      <div class="arch-layer layer-3">
-        <div class="arch-layer-badge">
-          <span style="font-size: 1.8rem;">&#x1F4F3;</span>
-          <span class="layer-num">Layer 3</span>
+
+      <!-- Zustand Stores -->
+      <div class="arch-section-divider fade-in">
+        <span class="divider-line"></span>
+        <span class="divider-title">Zustand Stores</span>
+        <span class="divider-line"></span>
+      </div>
+      <div class="stores-grid fade-in">
+        <div class="store-chip">
+          <span class="store-icon">&#x1F511;</span>
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700;">Auth Store</div>
+            <div class="store-name">useAuthStore</div>
+          </div>
         </div>
-        <div class="arch-layer-content">
-          <div class="arch-layer-title">NFC/HCE Boost (Optional)</div>
-          <div class="arch-layer-subtitle">Near Field Communication &mdash; 보조 채널</div>
-          <div class="arch-layer-desc">Android HCE 즉시 교환, iOS CoreNFC 태그 읽기. 앱 미설치 상대 대응(딥링크/NDEF). BLE 실패 시 폴백 채널.</div>
+        <div class="store-chip">
+          <span class="store-icon">&#x1F464;</span>
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700;">Profile Store</div>
+            <div class="store-name">useProfileStore</div>
+          </div>
+        </div>
+        <div class="store-chip">
+          <span class="store-icon">&#x1F4E1;</span>
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700;">Exchange Store</div>
+            <div class="store-name">useExchangeStore</div>
+          </div>
+        </div>
+        <div class="store-chip">
+          <span class="store-icon">&#x1F91D;</span>
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700;">Connection Store</div>
+            <div class="store-name">useConnectionStore</div>
+          </div>
+        </div>
+        <div class="store-chip">
+          <span class="store-icon">&#x1F578;&#xFE0F;</span>
+          <div>
+            <div style="font-size: 0.78rem; font-weight: 700;">Graph Store</div>
+            <div class="store-name">useGraphStore</div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="arch-coordinator fade-in">
-      <div class="arch-coordinator-icon">&#x2699;&#xFE0F;</div>
-      <div class="arch-coordinator-text">
-        <div class="coord-title">ExchangeManager &mdash; 통합 조율기</div>
-        <div class="coord-desc">BLE, NFC, Server 3개 레이어를 통합 관리하는 싱글톤 클래스. 상태 머신 기반(idle &rarr; scanning &rarr; discovered &rarr; exchanging &rarr; completed)으로 교환 플로우를 조율하며, 실패 시 자동 폴백과 오프라인 큐를 처리합니다.</div>
+    <!-- ============================
+         PANEL 2: Phone-to-Phone Data Flow
+         ============================ -->
+    <div class="arch-panel" id="panel-phone-flow">
+
+      <div class="arch-subsection-title fade-in">&#xD3F0; &#xB300; &#xD3F0; &#xB370;&#xC774;&#xD130; &#xD750;&#xB984;&#xB3C4;</div>
+      <div class="arch-subsection-desc fade-in">&#xB450; &#xC2A4;&#xB9C8;&#xD2B8;&#xD3F0;&#xC774; &#xAC00;&#xAE4C;&#xC774; &#xC811;&#xADFC;&#xD588;&#xC744; &#xB54C; &#xBC1C;&#xC0DD;&#xD558;&#xB294; &#xC804;&#xCCB4; &#xB370;&#xC774;&#xD130; &#xAD50;&#xD658; &#xD504;&#xB85C;&#xC138;&#xC2A4; (NFC &#xACBD;&#xB85C; &#xAE30;&#xC900;)</div>
+
+      <!-- PixiJS Data Flow Visualization -->
+      <div class="viz-canvas-wrapper fade-in" style="margin-bottom: 32px;">
+        <div id="pixiCanvas"></div>
+        <div class="viz-overlay-info">
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #10B981;"></span> NFC Signal</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #3B82F6;"></span> BLE Discovery</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #00B4D8;"></span> Server Sync</div>
+          <div class="viz-info-chip"><span class="chip-dot" style="background: #F59E0B;"></span> Knowledge Graph</div>
+        </div>
+        <div class="viz-canvas-label">Data Exchange Flow &#x2022; Real-time Simulation</div>
+      </div>
+
+      <!-- Phase Legend Chips -->
+      <div class="flow-phases fade-in">
+        <div class="flow-phase-chip">
+          <span class="phase-dot" style="background: #10B981;"></span>
+          Discovery
+        </div>
+        <div class="flow-phase-chip">
+          <span class="phase-dot" style="background: #3B82F6;"></span>
+          Event
+        </div>
+        <div class="flow-phase-chip">
+          <span class="phase-dot" style="background: var(--accent-cyan);"></span>
+          Exchange
+        </div>
+        <div class="flow-phase-chip">
+          <span class="phase-dot" style="background: var(--alive-emerald);"></span>
+          Persist &amp; Sync
+        </div>
+        <div class="flow-phase-chip">
+          <span class="phase-dot" style="background: #A78BFA;"></span>
+          Display
+        </div>
+      </div>
+
+      <div class="phone-flow-container fade-in">
+        <div class="phone-flow-diagram">
+          <!-- Phone A -->
+          <div class="phone-tower">
+            <div class="phone-device" style="border-color: #3B82F6;">
+              <span class="phone-icon">&#x1F4F1;</span>
+              <span class="phone-label">PHONE A</span>
+            </div>
+            <div class="phone-user-label">&#xBC1C;&#xC2E0;&#xC790;</div>
+            <div class="phone-user-sub">HCE &#xBE0C;&#xB85C;&#xB4DC;&#xCE90;&#xC2A4;&#xD2B8;</div>
+          </div>
+
+          <!-- Center: Flow Steps -->
+          <div class="flow-steps">
+            <!-- Phase 1: Discovery -->
+            <div class="flow-phase-divider">
+              <span class="divider-line"></span>
+              <span class="divider-label" style="color: #10B981;">Phase 1 &mdash; Discovery</span>
+              <span class="divider-line"></span>
+            </div>
+
+            <div class="flow-step color-nfc">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">NFC/HCE Tap</div>
+                <div class="flow-step-desc">Phone A&#xC758; HCE&#xAC00; NDEF URL &#xBE0C;&#xB85C;&#xB4DC;&#xCE90;&#xC2A4;&#xD2B8; &rarr; Phone B&#xAC00; &#xD0DC;&#xADF8; &#xC77D;&#xAE30; &rarr; userId &#xCD94;&#xCD9C;</div>
+              </div>
+              <div class="flow-step-arrow">A &rarr; B</div>
+            </div>
+
+            <!-- Phase 2: Event -->
+            <div class="flow-phase-divider">
+              <span class="divider-line"></span>
+              <span class="divider-label" style="color: #3B82F6;">Phase 2 &mdash; Event Dispatch</span>
+              <span class="divider-line"></span>
+            </div>
+
+            <div class="flow-step color-ble">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">ExchangeEvent &#xBC1C;&#xD589;</div>
+                <div class="flow-step-desc">NFCExchangeService &rarr; ExchangeEvent { type: 'request', partnerId, method: 'nfc' }</div>
+              </div>
+              <div class="flow-step-arrow">B</div>
+            </div>
+
+            <div class="flow-step color-ble">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">Auto Accept</div>
+                <div class="flow-step-desc">ExchangeManager&#xAC00; NFC &#xAD50;&#xD658;&#xC744; &#xC790;&#xB3D9; &#xC2B9;&#xC778; (&#xC0AC;&#xC6A9;&#xC790; &#xD655;&#xC778; &#xBD88;&#xD544;&#xC694;)</div>
+              </div>
+              <div class="flow-step-arrow">B</div>
+            </div>
+
+            <!-- Phase 3: Exchange -->
+            <div class="flow-phase-divider">
+              <span class="divider-line"></span>
+              <span class="divider-label" style="color: var(--accent-cyan);">Phase 3 &mdash; Server Exchange</span>
+              <span class="divider-line"></span>
+            </div>
+
+            <div class="flow-step color-server">
+              <div class="flow-step-num">4</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">Supabase &#xD504;&#xB85C;&#xD544; &#xC870;&#xD68C;</div>
+                <div class="flow-step-desc">SELECT * FROM users WHERE id = partnerId &rarr; &#xD504;&#xB85C;&#xD544; &#xB370;&#xC774;&#xD130; &#xD68D;&#xB4DD;</div>
+              </div>
+              <div class="flow-step-arrow">B &rarr; DB</div>
+            </div>
+
+            <div class="flow-step color-server">
+              <div class="flow-step-num">5</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">GPS &#xC704;&#xCE58; &#xCEA1;&#xCC98;</div>
+                <div class="flow-step-desc">LocationService.getCurrentLocation() &rarr; { lat, lng, address }</div>
+              </div>
+              <div class="flow-step-arrow">B &rarr; GPS</div>
+            </div>
+
+            <!-- Phase 4: Persist & Sync -->
+            <div class="flow-phase-divider">
+              <span class="divider-line"></span>
+              <span class="divider-label" style="color: var(--alive-emerald);">Phase 4 &mdash; Persist &amp; Sync</span>
+              <span class="divider-line"></span>
+            </div>
+
+            <div class="flow-step color-alive">
+              <div class="flow-step-num">6</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">DB &#xC0BD;&#xC785; (Interaction)</div>
+                <div class="flow-step-desc">INSERT INTO interactions (source_user_id, target_user_id, met_at, location...) &rarr; &#xB9CC;&#xB0A8; &#xAE30;&#xB85D;</div>
+              </div>
+              <div class="flow-step-arrow">B &rarr; DB</div>
+            </div>
+
+            <div class="flow-step color-alive">
+              <div class="flow-step-num">7</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">Connection &#xBE4C;&#xB4DC;</div>
+                <div class="flow-step-desc">{ user: UserProfile, interaction: Interaction } &rarr; useConnectionStore &#xC5C5;&#xB370;&#xC774;&#xD2B8;</div>
+              </div>
+              <div class="flow-step-arrow">B</div>
+            </div>
+
+            <div class="flow-step color-alive">
+              <div class="flow-step-num">8</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">&#xC9C0;&#xC2DD;&#xADF8;&#xB798;&#xD504; &#xB3D9;&#xAE30;</div>
+                <div class="flow-step-desc">POST /beings/{id}/knowledge/nodes &rarr; Person &#xB178;&#xB4DC; + KNOWS &#xC5E3;&#xC9C0; &#xC0DD;&#xC131;</div>
+              </div>
+              <div class="flow-step-arrow">B &rarr; ALIVE</div>
+            </div>
+
+            <!-- Phase 5: Display -->
+            <div class="flow-phase-divider">
+              <span class="divider-line"></span>
+              <span class="divider-label" style="color: #A78BFA;">Phase 5 &mdash; Display</span>
+              <span class="divider-line"></span>
+            </div>
+
+            <div class="flow-step color-ui">
+              <div class="flow-step-num">9</div>
+              <div class="flow-step-content">
+                <div class="flow-step-title">HandshakeSuccess UI</div>
+                <div class="flow-step-desc">&#xD30C;&#xD2B8;&#xB108; &#xD504;&#xB85C;&#xD544; + &#xB9CC;&#xB0A8; &#xC704;&#xCE58; &#xC624;&#xBC84;&#xB808;&#xC774; &#xD45C;&#xC2DC; &rarr; &#xD0C0;&#xC784;&#xB77C;&#xC778;&#xC5D0; &#xCD94;&#xAC00;</div>
+              </div>
+              <div class="flow-step-arrow">B &#x2192; UI</div>
+            </div>
+          </div>
+
+          <!-- Phone B -->
+          <div class="phone-tower">
+            <div class="phone-device" style="border-color: var(--alive-emerald);">
+              <span class="phone-icon">&#x1F4F1;</span>
+              <span class="phone-label">PHONE B</span>
+            </div>
+            <div class="phone-user-label">&#xC218;&#xC2E0;&#xC790;</div>
+            <div class="phone-user-sub">NFC &#xD0DC;&#xADF8; &#xC77D;&#xAE30;</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLE Alternative Flow -->
+      <div class="arch-section-divider fade-in">
+        <span class="divider-line"></span>
+        <span class="divider-title">BLE &#xB300;&#xCCB4; &#xACBD;&#xB85C;</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <div style="max-width: 680px; margin: 0 auto;" class="fade-in">
+        <div class="flow-steps">
+          <div class="flow-step color-ble">
+            <div class="flow-step-num">1</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">BLE Scanner&#xAC00; SERVICE_UUID&#xB85C; &#xAE30;&#xAE30; &#xBC1C;&#xACAC;</div>
+              <div class="flow-step-desc">Central &#xBAA8;&#xB4DC; &#xC2A4;&#xCE94; &rarr; Peripheral &#xAE30;&#xAE30; &#xAC10;&#xC9C0;</div>
+            </div>
+          </div>
+          <div class="flow-step color-ble">
+            <div class="flow-step-num">2</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">GATT Read &rarr; userId &#xD68D;&#xB4DD;</div>
+              <div class="flow-step-desc">BLE Characteristic&#xC5D0;&#xC11C; &#xC0C1;&#xB300;&#xBC29; userId &#xC77D;&#xAE30;</div>
+            </div>
+          </div>
+          <div class="flow-step color-ble">
+            <div class="flow-step-num">3</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">RSSI &#xADFC;&#xC811; &#xCCB4;&#xD06C; (-50dBm &#xC784;&#xACC4;&#xAC12;)</div>
+              <div class="flow-step-desc">&#xC2E0;&#xD638; &#xAC15;&#xB3C4;&#xAC00; &#xC784;&#xACC4;&#xAC12; &#xC774;&#xC0C1;&#xC774;&#xBA74; &#xADFC;&#xAC70;&#xB9AC; &#xD310;&#xC815; (~5m)</div>
+            </div>
+          </div>
+          <div class="flow-step color-ble">
+            <div class="flow-step-num">4</div>
+            <div class="flow-step-content">
+              <div class="flow-step-title">&#xAD50;&#xD658; &#xC694;&#xCCAD; &#xC2DC;&#xD2B8; &#xD45C;&#xC2DC;</div>
+              <div class="flow-step-desc">&#xC0AC;&#xC6A9;&#xC790; &#xC218;&#xB77D; &rarr; NFC Phase 4 &#xC774;&#xD6C4;&#xC640; &#xB3D9;&#xC77C;&#xD55C; &#xD750;&#xB984; &#xC9C4;&#xD589;</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- ============================
+         PANEL 3: 3-Layer Architecture + State Machine
+         ============================ -->
+    <div class="arch-panel" id="panel-3layer">
+
+      <!-- State Machine -->
+      <div class="arch-subsection-title fade-in">Exchange Protocol &#xC0C1;&#xD0DC; &#xBA38;&#xC2E0;</div>
+      <div class="arch-subsection-desc fade-in">ExchangeManager&#xC758; &#xC0C1;&#xD0DC; &#xC804;&#xC774; &#xB2E4;&#xC774;&#xC5B4;&#xADF8;&#xB7A8;</div>
+
+      <div class="state-machine-card fade-in">
+        <div class="state-machine">
+          <!-- IDLE -->
+          <div class="state-node">
+            <div class="state-circle">
+              <span class="state-icon">&#x23F8;&#xFE0F;</span>
+              <span class="state-name">Idle</span>
+            </div>
+          </div>
+          <div class="state-transition">
+            <div class="state-transition-arrow"></div>
+            <div class="state-transition-label">startScan()</div>
+          </div>
+          <!-- SCANNING -->
+          <div class="state-node">
+            <div class="state-circle state-active" style="animation: archPulse 2s ease-in-out infinite;">
+              <span class="state-icon">&#x1F4E1;</span>
+              <span class="state-name">Scanning</span>
+            </div>
+          </div>
+          <div class="state-transition">
+            <div class="state-transition-arrow"></div>
+            <div class="state-transition-label">deviceFound</div>
+          </div>
+          <!-- DISCOVERED -->
+          <div class="state-node">
+            <div class="state-circle">
+              <span class="state-icon">&#x1F50D;</span>
+              <span class="state-name">Discovered</span>
+            </div>
+          </div>
+          <div class="state-transition">
+            <div class="state-transition-arrow"></div>
+            <div class="state-transition-label">accept()</div>
+          </div>
+          <!-- EXCHANGING -->
+          <div class="state-node">
+            <div class="state-circle">
+              <span class="state-icon">&#x1F504;</span>
+              <span class="state-name">Exchanging</span>
+            </div>
+          </div>
+          <div class="state-transition">
+            <div class="state-transition-arrow"></div>
+            <div class="state-transition-label">success</div>
+          </div>
+          <!-- COMPLETED -->
+          <div class="state-node">
+            <div class="state-circle" style="border-color: var(--success);">
+              <span class="state-icon">&#x2714;&#xFE0F;</span>
+              <span class="state-name">Completed</span>
+            </div>
+          </div>
+        </div>
+        <div style="text-align: center; margin-top: 12px; font-size: 0.75rem; color: var(--text-muted);">
+          &#xC2E4;&#xD328; &#xC2DC; &#xC790;&#xB3D9; &#xD3F4;&#xBC31; &middot; &#xC624;&#xD504;&#xB77C;&#xC778; &#xD050; &#xCC98;&#xB9AC; &middot; &#xD0C0;&#xC784;&#xC544;&#xC6C3; &#xBCF5;&#xAD6C;
+        </div>
+      </div>
+
+      <!-- 3-Layer Detail -->
+      <div class="arch-section-divider fade-in">
+        <span class="divider-line"></span>
+        <span class="divider-title">3-Layer Hybrid Architecture</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <div class="arch-layers-v2 fade-in">
+        <!-- Layer 1: BLE -->
+        <div class="arch-layer-v2 layer-ble">
+          <div class="arch-layer-v2-badge">
+            <span class="layer-icon">&#x1F4E1;</span>
+            <span class="layer-num">Layer 1</span>
+          </div>
+          <div class="arch-layer-v2-content">
+            <div class="arch-layer-v2-title">BLE Discovery (Primary)</div>
+            <div class="arch-layer-v2-subtitle">Bluetooth Low Energy &mdash; &#xD56D;&#xC0C1; &#xD65C;&#xC131;</div>
+            <div class="arch-layer-v2-desc">BLE &#xC2A4;&#xCE94; + &#xAD11;&#xACE0;&#xB97C; &#xD1B5;&#xD55C; &#xAE30;&#xAE30; &#xBC1C;&#xACAC;, &#xC571; &#xBCF4;&#xC720; &#xD655;&#xC778;, userId &#xAD50;&#xD658;. RSSI &#xADFC;&#xC811; &#xD544;&#xD130;(-50dBm)&#xB85C; &#xADFC;&#xAC70;&#xB9AC; &#xC0AC;&#xC6A9;&#xC790;&#xB9CC; &#xAC10;&#xC9C0;. 5m &#xC774;&#xB0B4; &#xC790;&#xB3D9; &#xD2B8;&#xB9AC;&#xAC70;.</div>
+            <div class="arch-layer-v2-data">
+              <span class="data-tag">SERVICE_UUID</span>
+              <span class="data-tag">GATT Read</span>
+              <span class="data-tag">RSSI &ge; -50dBm</span>
+              <span class="data-tag">react-native-ble-plx</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 2: Server Exchange -->
+        <div class="arch-layer-v2 layer-server">
+          <div class="arch-layer-v2-badge">
+            <span class="layer-icon">&#x2601;&#xFE0F;</span>
+            <span class="layer-num">Layer 2</span>
+          </div>
+          <div class="arch-layer-v2-content">
+            <div class="arch-layer-v2-title">Server Exchange</div>
+            <div class="arch-layer-v2-subtitle">Express.js + Supabase &mdash; &#xB370;&#xC774;&#xD130; &#xAD50;&#xD658; &#xD575;&#xC2EC;</div>
+            <div class="arch-layer-v2-desc">&#xD504;&#xB85C;&#xD544; &#xB370;&#xC774;&#xD130; &#xAD50;&#xD658;, &#xB9CC;&#xB0A8; &#xAE30;&#xB85D; &#xC800;&#xC7A5;, GPS &#xC704;&#xCE58; &#xD0DC;&#xAE45;, &#xC5ED;&#xC9C0;&#xC624;&#xCF54;&#xB529;. JWT &#xC778;&#xC99D; &#xAE30;&#xBC18;. &#xC591;&#xCE21; &#xB3D9;&#xC2DC; &#xAD50;&#xD658; &#xBCF4;&#xC7A5;.</div>
+            <div class="arch-layer-v2-data">
+              <span class="data-tag">JWT Auth</span>
+              <span class="data-tag">PostgreSQL</span>
+              <span class="data-tag">GPS Tagging</span>
+              <span class="data-tag">&#xC5ED;&#xC9C0;&#xC624;&#xCF54;&#xB529;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Layer 3: NFC Boost -->
+        <div class="arch-layer-v2 layer-nfc">
+          <div class="arch-layer-v2-badge">
+            <span class="layer-icon">&#x1F4F3;</span>
+            <span class="layer-num">Layer 3</span>
+          </div>
+          <div class="arch-layer-v2-content">
+            <div class="arch-layer-v2-title">NFC/HCE Boost (Optional)</div>
+            <div class="arch-layer-v2-subtitle">Near Field Communication &mdash; &#xBCF4;&#xC870; &#xCC44;&#xB110;</div>
+            <div class="arch-layer-v2-desc">Android HCE &#xC989;&#xC2DC; &#xAD50;&#xD658;, iOS CoreNFC &#xD0DC;&#xADF8; &#xC77D;&#xAE30;. &#xC571; &#xBBF8;&#xC124;&#xCE58; &#xC0C1;&#xB300; &#xB300;&#xC751;(&#xB525;&#xB9C1;&#xD06C;/NDEF). BLE &#xC2E4;&#xD328; &#xC2DC; &#xD3F4;&#xBC31; &#xCC44;&#xB110;.</div>
+            <div class="arch-layer-v2-data">
+              <span class="data-tag">NDEF URL</span>
+              <span class="data-tag">HCE Service</span>
+              <span class="data-tag">CoreNFC</span>
+              <span class="data-tag">Deep Link</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ExchangeManager Orchestrator -->
+      <div class="arch-orchestrator fade-in">
+        <div class="arch-orchestrator-icon">&#x2699;&#xFE0F;</div>
+        <div class="arch-orchestrator-body">
+          <div class="arch-orchestrator-title">ExchangeManager &mdash; &#xD1B5;&#xD569; &#xC870;&#xC728;&#xAE30;</div>
+          <div class="arch-orchestrator-desc">
+            BLE, NFC, Server 3&#xAC1C; &#xB808;&#xC774;&#xC5B4;&#xB97C; &#xD1B5;&#xD569; &#xAD00;&#xB9AC;&#xD558;&#xB294; &#xC2F1;&#xAE00;&#xD1A4; &#xD074;&#xB798;&#xC2A4;. &#xC0C1;&#xD0DC; &#xBA38;&#xC2E0; &#xAE30;&#xBC18;&#xC73C;&#xB85C; &#xAD50;&#xD658; &#xD50C;&#xB85C;&#xC6B0;&#xB97C; &#xC870;&#xC728;&#xD558;&#xBA70;, &#xC2E4;&#xD328; &#xC2DC; &#xC790;&#xB3D9; &#xD3F4;&#xBC31;&#xACFC; &#xC624;&#xD504;&#xB77C;&#xC778; &#xD050;&#xB97C; &#xCC98;&#xB9AC;&#xD569;&#xB2C8;&#xB2E4;.
+          </div>
+          <div class="arch-orchestrator-methods">
+            <span class="method-chip">startListening()</span>
+            <span class="method-chip">stopListening()</span>
+            <span class="method-chip">acceptExchange()</span>
+            <span class="method-chip">rejectExchange()</span>
+            <span class="method-chip">handleExchangeEvent()</span>
+            <span class="method-chip">processExchange()</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================
+         PANEL 4: Data Model & Knowledge Graph
+         ============================ -->
+    <div class="arch-panel" id="panel-data">
+
+      <!-- Backend Data Model -->
+      <div class="arch-subsection-title fade-in">&#xBC31;&#xC5D4;&#xB4DC; &#xB370;&#xC774;&#xD130; &#xBAA8;&#xB378;</div>
+      <div class="arch-subsection-desc fade-in">Supabase PostgreSQL &#xD14C;&#xC774;&#xBE14; &#xC2A4;&#xD0A4;&#xB9C8;&#xC640; &#xAD00;&#xACC4;</div>
+
+      <div class="db-schema fade-in">
+        <!-- Users Table -->
+        <div class="db-table-card">
+          <div class="db-table-header">
+            <span class="db-table-name">users</span>
+            <span class="db-table-type">Table</span>
+          </div>
+          <ul class="db-columns">
+            <li class="db-col">
+              <span class="db-col-name">id</span>
+              <span class="db-col-type">UUID</span>
+              <span class="db-col-badge pk">PK</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">name</span>
+              <span class="db-col-type">VARCHAR</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">company</span>
+              <span class="db-col-type">VARCHAR</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">title</span>
+              <span class="db-col-type">VARCHAR</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">avatar_url</span>
+              <span class="db-col-type">TEXT</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">social_links</span>
+              <span class="db-col-type">JSONB</span>
+              <span class="db-col-badge jsonb">JSONB</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">bio</span>
+              <span class="db-col-type">TEXT</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Interactions Table -->
+        <div class="db-table-card">
+          <div class="db-table-header">
+            <span class="db-table-name">interactions</span>
+            <span class="db-table-type">Table</span>
+          </div>
+          <ul class="db-columns">
+            <li class="db-col">
+              <span class="db-col-name">id</span>
+              <span class="db-col-type">UUID</span>
+              <span class="db-col-badge pk">PK</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">source_user_id</span>
+              <span class="db-col-type">UUID</span>
+              <span class="db-col-badge fk">FK</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">target_user_id</span>
+              <span class="db-col-type">UUID</span>
+              <span class="db-col-badge fk">FK</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">met_at</span>
+              <span class="db-col-type">TIMESTAMPTZ</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">location_lat</span>
+              <span class="db-col-type">FLOAT8</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">location_lng</span>
+              <span class="db-col-type">FLOAT8</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">location_address</span>
+              <span class="db-col-type">TEXT</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">exchange_method</span>
+              <span class="db-col-type">VARCHAR</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">memo</span>
+              <span class="db-col-type">TEXT</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">tags</span>
+              <span class="db-col-type">TEXT[]</span>
+            </li>
+            <li class="db-col">
+              <span class="db-col-name">status</span>
+              <span class="db-col-type">VARCHAR</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Relationship indicator -->
+      <div class="db-relation fade-in">
+        <span class="db-relation-line"></span>
+        users.id &larr; interactions.source_user_id / target_user_id (N:1)
+        <span class="db-relation-line"></span>
+      </div>
+
+      <!-- Knowledge Graph Integration -->
+      <div class="arch-section-divider fade-in">
+        <span class="divider-line"></span>
+        <span class="divider-title">ALIVE Engine &#xC9C0;&#xC2DD;&#xADF8;&#xB798;&#xD504; &#xD1B5;&#xD569;</span>
+        <span class="divider-line"></span>
+      </div>
+
+      <div class="kg-integration fade-in">
+        <!-- Graph Visualization -->
+        <div class="kg-card">
+          <div class="kg-card-title">
+            <span>&#x1F578;&#xFE0F;</span> &#xADF8;&#xB798;&#xD504; &#xAD6C;&#xC870;
+          </div>
+          <div class="kg-mini-graph">
+            <!-- Person A -->
+            <div class="kg-node">
+              <div class="kg-node-circle person">A</div>
+              <div class="kg-node-label">Person</div>
+            </div>
+            <!-- KNOWS edge -->
+            <div class="kg-edge">
+              <div class="kg-edge-line" style="background: var(--alive-emerald); color: var(--alive-emerald);"></div>
+              <div class="kg-edge-label">KNOWS</div>
+            </div>
+            <!-- Person B -->
+            <div class="kg-node">
+              <div class="kg-node-circle person">B</div>
+              <div class="kg-node-label">Person</div>
+            </div>
+            <!-- WORKS_AT edge -->
+            <div class="kg-edge">
+              <div class="kg-edge-line" style="background: var(--warning); color: var(--warning);"></div>
+              <div class="kg-edge-label">WORKS_AT</div>
+            </div>
+            <!-- Organization -->
+            <div class="kg-node">
+              <div class="kg-node-circle org">&#x1F3E2;</div>
+              <div class="kg-node-label">Organization</div>
+            </div>
+          </div>
+          <div class="kg-mini-graph" style="margin-top: 8px;">
+            <!-- Person A (again, conceptual) -->
+            <div class="kg-node">
+              <div class="kg-node-circle person">A</div>
+              <div class="kg-node-label">Person</div>
+            </div>
+            <!-- INTERESTED_IN -->
+            <div class="kg-edge">
+              <div class="kg-edge-line" style="background: #A78BFA; color: #A78BFA;"></div>
+              <div class="kg-edge-label">INTERESTED_IN</div>
+            </div>
+            <!-- Topic -->
+            <div class="kg-node">
+              <div class="kg-node-circle topic">T</div>
+              <div class="kg-node-label">Topic</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Integration Flow -->
+        <div class="kg-card">
+          <div class="kg-card-title">
+            <span>&#x26A1;</span> &#xD1B5;&#xD569; &#xD750;&#xB984;
+          </div>
+          <div class="kg-flow-list">
+            <div class="kg-flow-item">
+              <div class="kg-flow-num">1</div>
+              <div>&#xBA85;&#xD568; &#xAD50;&#xD658; &#xC644;&#xB8CC; &#xC2DC; <strong>Person &#xB178;&#xB4DC;</strong> &#xC790;&#xB3D9; &#xC0DD;&#xC131;<br><span style="font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted);">POST /beings/{id}/knowledge/nodes</span></div>
+            </div>
+            <div class="kg-flow-item">
+              <div class="kg-flow-num">2</div>
+              <div>&#xB450; &#xC0AC;&#xC6A9;&#xC790; &#xAC04; <strong>KNOWS &#xC5E3;&#xC9C0;</strong> &#xC0DD;&#xC131;<br><span style="font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted);">POST /beings/{id}/knowledge/edges</span></div>
+            </div>
+            <div class="kg-flow-item">
+              <div class="kg-flow-num">3</div>
+              <div>&#xBA54;&#xBAA8; &#xC785;&#xB825; &#xC2DC; <strong>&#xC5D4;&#xD2F0;&#xD2F0; &#xCD94;&#xCD9C;</strong><br><span style="font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted);">Organization, Topic, Skill &#xB178;&#xB4DC; &#xC0DD;&#xC131;</span></div>
+            </div>
+            <div class="kg-flow-item">
+              <div class="kg-flow-num">4</div>
+              <div><strong>useGraphStore</strong>&#xC5D0; &#xB3D9;&#xAE30; (AsyncStorage &#xC601;&#xC18D;&#xD654;)<br><span style="font-family: var(--mono); font-size: 0.72rem; color: var(--text-muted);">&#xC624;&#xD504;&#xB77C;&#xC778; &#xC2DC; &#xD050;&#xC5D0; &#xC800;&#xC7A5; &#x2192; &#xC7AC;&#xC811;&#xC18D; &#xC2DC; &#xB3D9;&#xAE30;</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Mapping -->
+        <div class="kg-card full-width">
+          <div class="kg-card-title">
+            <span>&#x1F517;</span> &#xC0AC;&#xC6A9;&#xC790; &#xB9E4;&#xD551;
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 16px; padding: 16px; flex-wrap: wrap;">
+            <div style="text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">Supabase</div>
+              <div style="font-family: var(--mono); font-size: 0.82rem; padding: 8px 16px; background: var(--deep-navy); border-radius: var(--radius-sm); border: 1px solid var(--border);">users.id</div>
+            </div>
+            <div style="font-size: 1.4rem; color: var(--alive-emerald);">&#x2194;</div>
+            <div style="text-align: center;">
+              <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 4px;">ALIVE Engine</div>
+              <div style="font-family: var(--mono); font-size: 0.82rem; padding: 8px 16px; background: var(--deep-navy); border-radius: var(--radius-sm); border: 1px solid var(--border);">being_id</div>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); padding-left: 16px; border-left: 1px solid var(--border);">1:1 &#xB9E4;&#xD551; &mdash; &#xC0AC;&#xC6A9;&#xC790;&#xB2F9; &#xD558;&#xB098;&#xC758; being</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -1801,6 +3514,10 @@ section {
   </div>
 </footer>
 
+<!-- Three.js & PixiJS CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+
 <!-- ============================================
      JAVASCRIPT
      ============================================ -->
@@ -1935,6 +3652,508 @@ section {
     progressObserver.observe(bar);
   });
 
+  /* ---- Architecture Tab Switching ---- */
+  var archTabs = document.querySelectorAll('.arch-tab');
+  var archPanels = document.querySelectorAll('.arch-panel');
+
+  archTabs.forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      var targetId = tab.getAttribute('data-panel');
+
+      /* Update active tab */
+      archTabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+
+      /* Update active panel */
+      archPanels.forEach(function(p) { p.classList.remove('active'); });
+      var targetPanel = document.getElementById(targetId);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+
+        /* Re-trigger fade-in animations for newly visible panel */
+        var fadeEls = targetPanel.querySelectorAll('.fade-in');
+        fadeEls.forEach(function(el) {
+          if (!el.classList.contains('visible')) {
+            observer.observe(el);
+          }
+        });
+      }
+    });
+  });
+
+})();
+</script>
+
+<!-- Three.js: 3D Architecture Network Graph -->
+<script>
+(function() {
+  'use strict';
+  if (typeof THREE === 'undefined') return;
+
+  var container = document.getElementById('threeCanvas');
+  if (!container) return;
+  var W = container.clientWidth;
+  var H = container.clientHeight || 420;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(60, W / H, 0.1, 1000);
+  camera.position.set(0, 0, 14);
+
+  var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0x0A1628, 1);
+  container.appendChild(renderer.domElement);
+
+  /* --- Nodes --- */
+  var nodeData = [
+    { label: 'Mobile App',    color: 0x3B82F6, pos: [-4, 2, 0],   size: 0.7 },
+    { label: 'Web Dashboard', color: 0xA78BFA, pos: [4, 2, 0],    size: 0.5 },
+    { label: 'API Server',    color: 0x00B4D8, pos: [0, 0, 0],    size: 0.6 },
+    { label: 'Supabase',      color: 0x00D4AA, pos: [-3, -2.5, 0],size: 0.6 },
+    { label: 'ALIVE Engine',  color: 0xF59E0B, pos: [3, -2.5, 0], size: 0.55 },
+    { label: 'Neo4j',         color: 0xEF4444, pos: [5.5, -4, 0], size: 0.4 },
+    { label: 'BLE',           color: 0x6366F1, pos: [-6.5, 3.5, -1], size: 0.35 },
+    { label: 'NFC',           color: 0x10B981, pos: [-5.5, 0.5, 1],  size: 0.35 },
+    { label: 'ExchangeMgr',   color: 0x06B6D4, pos: [-2, 0.5, 0.5], size: 0.45 },
+    { label: 'Zustand',       color: 0x8B5CF6, pos: [-4, -0.5, -0.5], size: 0.3 },
+    { label: 'OntologyHub',   color: 0xD97706, pos: [6, -1, -1], size: 0.3 },
+    { label: 'LocationSvc',   color: 0x14B8A6, pos: [-1, 2.5, 1], size: 0.3 },
+  ];
+
+  var edges = [
+    [0, 2], [1, 2], [2, 3], [2, 4], [4, 5], [4, 10],
+    [0, 8], [8, 7], [8, 6], [0, 9], [0, 11], [0, 3],
+    [1, 3], [9, 3], [8, 2],
+  ];
+
+  var nodeMeshes = [];
+  var glowMeshes = [];
+
+  nodeData.forEach(function(d) {
+    /* Core sphere */
+    var geo = new THREE.SphereGeometry(d.size, 32, 32);
+    var mat = new THREE.MeshPhongMaterial({
+      color: d.color,
+      emissive: d.color,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.9,
+      shininess: 80
+    });
+    var mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(d.pos[0], d.pos[1], d.pos[2]);
+    scene.add(mesh);
+    nodeMeshes.push(mesh);
+
+    /* Glow */
+    var glowGeo = new THREE.SphereGeometry(d.size * 1.6, 16, 16);
+    var glowMat = new THREE.MeshBasicMaterial({
+      color: d.color,
+      transparent: true,
+      opacity: 0.08,
+    });
+    var glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.copy(mesh.position);
+    scene.add(glow);
+    glowMeshes.push(glow);
+  });
+
+  /* --- Edges (lines) --- */
+  edges.forEach(function(e) {
+    var a = nodeData[e[0]];
+    var b = nodeData[e[1]];
+    var points = [
+      new THREE.Vector3(a.pos[0], a.pos[1], a.pos[2]),
+      new THREE.Vector3(b.pos[0], b.pos[1], b.pos[2])
+    ];
+    var geo = new THREE.BufferGeometry().setFromPoints(points);
+    var mat = new THREE.LineBasicMaterial({
+      color: 0x00D4AA,
+      transparent: true,
+      opacity: 0.15
+    });
+    var line = new THREE.Line(geo, mat);
+    scene.add(line);
+  });
+
+  /* --- Floating particles along edges --- */
+  var particles = [];
+  for (var i = 0; i < 40; i++) {
+    var edge = edges[Math.floor(Math.random() * edges.length)];
+    var pGeo = new THREE.SphereGeometry(0.06, 8, 8);
+    var pMat = new THREE.MeshBasicMaterial({
+      color: 0x00D4AA,
+      transparent: true,
+      opacity: 0.7
+    });
+    var pMesh = new THREE.Mesh(pGeo, pMat);
+    scene.add(pMesh);
+    particles.push({
+      mesh: pMesh,
+      edge: edge,
+      t: Math.random(),
+      speed: 0.002 + Math.random() * 0.004,
+      dir: Math.random() > 0.5 ? 1 : -1
+    });
+  }
+
+  /* --- Lights --- */
+  var ambient = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambient);
+  var point1 = new THREE.PointLight(0x00D4AA, 0.8, 30);
+  point1.position.set(5, 5, 5);
+  scene.add(point1);
+  var point2 = new THREE.PointLight(0x00B4D8, 0.5, 30);
+  point2.position.set(-5, -3, 5);
+  scene.add(point2);
+
+  /* --- Background stars --- */
+  var starGeo = new THREE.BufferGeometry();
+  var starPositions = new Float32Array(600);
+  for (var s = 0; s < 600; s += 3) {
+    starPositions[s] = (Math.random() - 0.5) * 50;
+    starPositions[s+1] = (Math.random() - 0.5) * 50;
+    starPositions[s+2] = (Math.random() - 0.5) * 50 - 10;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+  var starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.05, transparent: true, opacity: 0.4 });
+  var stars = new THREE.Points(starGeo, starMat);
+  scene.add(stars);
+
+  /* --- Mouse interaction --- */
+  var mouseX = 0, mouseY = 0;
+  var isDragging = false;
+  var rotY = 0, rotX = 0;
+  var targetRotY = 0, targetRotX = 0;
+
+  container.addEventListener('mousedown', function() { isDragging = true; });
+  window.addEventListener('mouseup', function() { isDragging = false; });
+  container.addEventListener('mousemove', function(e) {
+    var rect = container.getBoundingClientRect();
+    mouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+    mouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    if (isDragging) {
+      targetRotY += e.movementX * 0.005;
+      targetRotX += e.movementY * 0.005;
+    }
+  });
+
+  /* Touch support */
+  var lastTouchX = 0, lastTouchY = 0;
+  container.addEventListener('touchstart', function(e) {
+    isDragging = true;
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
+  }, { passive: true });
+  container.addEventListener('touchmove', function(e) {
+    if (isDragging) {
+      targetRotY += (e.touches[0].clientX - lastTouchX) * 0.005;
+      targetRotX += (e.touches[0].clientY - lastTouchY) * 0.005;
+      lastTouchX = e.touches[0].clientX;
+      lastTouchY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+  container.addEventListener('touchend', function() { isDragging = false; }, { passive: true });
+
+  /* --- Animation Loop --- */
+  var clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    var t = clock.getElapsedTime();
+
+    /* Auto-rotate slowly */
+    if (!isDragging) {
+      targetRotY += 0.001;
+    }
+    rotY += (targetRotY - rotY) * 0.05;
+    rotX += (targetRotX - rotX) * 0.05;
+
+    /* Rotate all node group */
+    nodeMeshes.forEach(function(m, idx) {
+      var d = nodeData[idx];
+      var rx = rotX;
+      var ry = rotY;
+      /* Rotate around origin */
+      var x = d.pos[0], y = d.pos[1], z = d.pos[2];
+      var cosY = Math.cos(ry), sinY = Math.sin(ry);
+      var cosX = Math.cos(rx), sinX = Math.sin(rx);
+      var x1 = x * cosY + z * sinY;
+      var z1 = -x * sinY + z * cosY;
+      var y1 = y * cosX - z1 * sinX;
+      var z2 = y * sinX + z1 * cosX;
+      m.position.set(x1, y1 + Math.sin(t * 0.8 + idx) * 0.15, z2);
+      glowMeshes[idx].position.copy(m.position);
+      /* Pulse glow */
+      glowMeshes[idx].material.opacity = 0.06 + Math.sin(t * 1.5 + idx * 0.7) * 0.04;
+      glowMeshes[idx].scale.setScalar(1 + Math.sin(t * 1.2 + idx) * 0.1);
+    });
+
+    /* Update edge lines */
+    scene.children.forEach(function(child) {
+      if (child.isLine) {
+        scene.remove(child);
+      }
+    });
+    edges.forEach(function(e) {
+      var a = nodeMeshes[e[0]].position;
+      var b = nodeMeshes[e[1]].position;
+      var points = [a.clone(), b.clone()];
+      var geo = new THREE.BufferGeometry().setFromPoints(points);
+      var mat = new THREE.LineBasicMaterial({ color: 0x00D4AA, transparent: true, opacity: 0.12 });
+      var line = new THREE.Line(geo, mat);
+      scene.add(line);
+    });
+
+    /* Animate particles */
+    particles.forEach(function(p) {
+      p.t += p.speed * p.dir;
+      if (p.t > 1) { p.t = 0; p.edge = edges[Math.floor(Math.random() * edges.length)]; }
+      if (p.t < 0) { p.t = 1; p.edge = edges[Math.floor(Math.random() * edges.length)]; }
+      var a = nodeMeshes[p.edge[0]].position;
+      var b = nodeMeshes[p.edge[1]].position;
+      p.mesh.position.lerpVectors(a, b, p.t);
+      p.mesh.material.opacity = 0.3 + Math.sin(t * 3 + p.t * 6) * 0.3;
+    });
+
+    /* Camera subtle movement */
+    camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.02;
+    camera.position.y += (-mouseY * 0.3 - camera.position.y) * 0.02;
+    camera.lookAt(0, 0, 0);
+
+    renderer.render(scene, camera);
+  }
+
+  /* --- Start only when visible --- */
+  var threeStarted = false;
+  var threeObserver = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && !threeStarted) {
+      threeStarted = true;
+      animate();
+    }
+  }, { threshold: 0.1 });
+  threeObserver.observe(container);
+
+  /* --- Resize --- */
+  window.addEventListener('resize', function() {
+    W = container.clientWidth;
+    H = container.clientHeight || 420;
+    camera.aspect = W / H;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W, H);
+  });
+})();
+</script>
+
+<!-- PixiJS: 2D Data Flow Particle Animation -->
+<script>
+(function() {
+  'use strict';
+  if (typeof PIXI === 'undefined') return;
+
+  var container = document.getElementById('pixiCanvas');
+  if (!container) return;
+  var W = container.clientWidth;
+  var H = container.clientHeight || 340;
+
+  var app = new PIXI.Application({
+    width: W,
+    height: H,
+    backgroundColor: 0x0A1628,
+    antialias: true,
+    resolution: Math.min(window.devicePixelRatio, 2),
+    autoDensity: true,
+  });
+  container.appendChild(app.view);
+
+  /* --- Phone representations --- */
+  var phoneAx = W * 0.15;
+  var phoneBx = W * 0.85;
+  var centerY = H * 0.5;
+
+  function drawPhone(g, x, y, label, color) {
+    /* Phone body */
+    g.lineStyle(2, color, 0.8);
+    g.beginFill(0x1E293B, 0.9);
+    g.drawRoundedRect(x - 35, y - 60, 70, 120, 12);
+    g.endFill();
+    /* Screen */
+    g.lineStyle(0);
+    g.beginFill(color, 0.1);
+    g.drawRoundedRect(x - 28, y - 45, 56, 80, 6);
+    g.endFill();
+    /* Notch */
+    g.beginFill(0x0A1628, 1);
+    g.drawRoundedRect(x - 12, y - 56, 24, 4, 2);
+    g.endFill();
+    /* Pulse ring */
+    var ring = new PIXI.Graphics();
+    ring.lineStyle(2, color, 0.4);
+    ring.drawCircle(0, 0, 50);
+    ring.position.set(x, y);
+    ring.alpha = 0;
+    g.addChild(ring);
+    return ring;
+  }
+
+  var phonesG = new PIXI.Graphics();
+  var ringA = drawPhone(phonesG, phoneAx, centerY, 'A', 0x3B82F6);
+  var ringB = drawPhone(phonesG, phoneBx, centerY, 'B', 0x00D4AA);
+  app.stage.addChild(phonesG);
+
+  /* Phone labels */
+  var styleLabel = new PIXI.TextStyle({
+    fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: '700',
+    fill: 0x94A3B8, letterSpacing: 2,
+  });
+  var labelA = new PIXI.Text('PHONE A', styleLabel);
+  labelA.anchor.set(0.5);
+  labelA.position.set(phoneAx, centerY + 80);
+  app.stage.addChild(labelA);
+
+  var labelB = new PIXI.Text('PHONE B', styleLabel);
+  labelB.anchor.set(0.5);
+  labelB.position.set(phoneBx, centerY + 80);
+  app.stage.addChild(labelB);
+
+  /* --- Server/Backend boxes --- */
+  var serverNodes = [
+    { label: 'Supabase', x: W * 0.5, y: H * 0.2, color: 0x00D4AA, w: 70, h: 28 },
+    { label: 'API', x: W * 0.5, y: centerY, color: 0x00B4D8, w: 50, h: 28 },
+    { label: 'ALIVE', x: W * 0.5, y: H * 0.8, color: 0xF59E0B, w: 60, h: 28 },
+    { label: 'GPS', x: W * 0.35, y: H * 0.2, color: 0x14B8A6, w: 40, h: 24 },
+    { label: 'Neo4j', x: W * 0.65, y: H * 0.8, color: 0xEF4444, w: 50, h: 24 },
+  ];
+
+  var serverG = new PIXI.Graphics();
+  serverNodes.forEach(function(n) {
+    serverG.lineStyle(1, n.color, 0.5);
+    serverG.beginFill(n.color, 0.1);
+    serverG.drawRoundedRect(n.x - n.w/2, n.y - n.h/2, n.w, n.h, 6);
+    serverG.endFill();
+  });
+  app.stage.addChild(serverG);
+
+  var serverLabelStyle = new PIXI.TextStyle({
+    fontFamily: 'Inter, sans-serif', fontSize: 9, fontWeight: '600',
+    fill: 0x94A3B8,
+  });
+  serverNodes.forEach(function(n) {
+    var t = new PIXI.Text(n.label, { ...serverLabelStyle, fill: n.color });
+    t.anchor.set(0.5);
+    t.position.set(n.x, n.y);
+    app.stage.addChild(t);
+  });
+
+  /* --- Particle system --- */
+  var flowParticles = [];
+
+  var flowPaths = [
+    /* NFC: A -> B (green) */
+    { from: { x: phoneAx + 35, y: centerY }, to: { x: phoneBx - 35, y: centerY }, color: 0x10B981, count: 8, speed: 2, label: 'NFC' },
+    /* BLE: A -> B (blue, slightly offset) */
+    { from: { x: phoneAx + 35, y: centerY - 20 }, to: { x: phoneBx - 35, y: centerY - 20 }, color: 0x3B82F6, count: 5, speed: 1.5, label: 'BLE' },
+    /* B -> Supabase */
+    { from: { x: phoneBx - 35, y: centerY - 30 }, to: { x: serverNodes[0].x, y: serverNodes[0].y }, color: 0x00D4AA, count: 4, speed: 1.8, label: 'DB' },
+    /* B -> API */
+    { from: { x: phoneBx - 35, y: centerY }, to: { x: serverNodes[1].x + 25, y: serverNodes[1].y }, color: 0x00B4D8, count: 4, speed: 1.6, label: 'API' },
+    /* B -> ALIVE Engine */
+    { from: { x: phoneBx - 35, y: centerY + 30 }, to: { x: serverNodes[2].x, y: serverNodes[2].y }, color: 0xF59E0B, count: 3, speed: 1.2, label: 'KG' },
+    /* API -> Supabase */
+    { from: { x: serverNodes[1].x, y: serverNodes[1].y - 14 }, to: { x: serverNodes[0].x, y: serverNodes[0].y + 14 }, color: 0x00D4AA, count: 3, speed: 1, label: '' },
+    /* ALIVE -> Neo4j */
+    { from: { x: serverNodes[2].x + 30, y: serverNodes[2].y }, to: { x: serverNodes[4].x - 25, y: serverNodes[4].y }, color: 0xEF4444, count: 2, speed: 0.8, label: '' },
+    /* A -> GPS */
+    { from: { x: phoneAx + 35, y: centerY - 40 }, to: { x: serverNodes[3].x, y: serverNodes[3].y }, color: 0x14B8A6, count: 2, speed: 1, label: 'GPS' },
+    /* Supabase -> A (return) */
+    { from: { x: serverNodes[0].x - 35, y: serverNodes[0].y }, to: { x: phoneAx + 35, y: centerY - 30 }, color: 0x00D4AA, count: 3, speed: 1.4, label: '' },
+  ];
+
+  flowPaths.forEach(function(path) {
+    for (var i = 0; i < path.count; i++) {
+      var p = new PIXI.Graphics();
+      p.beginFill(path.color, 0.9);
+      p.drawCircle(0, 0, 2.5);
+      p.endFill();
+      /* Trail glow */
+      var glow = new PIXI.Graphics();
+      glow.beginFill(path.color, 0.2);
+      glow.drawCircle(0, 0, 6);
+      glow.endFill();
+      p.addChild(glow);
+      app.stage.addChild(p);
+      flowParticles.push({
+        graphic: p,
+        path: path,
+        t: Math.random(),
+        speed: path.speed * (0.8 + Math.random() * 0.4),
+      });
+    }
+  });
+
+  /* --- Connection lines (subtle) --- */
+  var linesG = new PIXI.Graphics();
+  linesG.alpha = 0.15;
+  flowPaths.forEach(function(path) {
+    linesG.lineStyle(1, path.color, 0.5);
+    linesG.moveTo(path.from.x, path.from.y);
+    /* Slight curve via control point */
+    var cx = (path.from.x + path.to.x) / 2;
+    var cy = (path.from.y + path.to.y) / 2 - 15;
+    linesG.quadraticCurveTo(cx, cy, path.to.x, path.to.y);
+  });
+  app.stage.addChildAt(linesG, 0);
+
+  /* --- Animate --- */
+  var elapsed = 0;
+  app.ticker.add(function(delta) {
+    elapsed += delta * 0.016;
+
+    /* Phone pulse rings */
+    var ra = Math.sin(elapsed * 2) * 0.5 + 0.5;
+    ringA.alpha = ra * 0.3;
+    ringA.scale.set(0.8 + ra * 0.4);
+    ringB.alpha = ra * 0.3;
+    ringB.scale.set(0.8 + ra * 0.4);
+
+    /* Move particles along paths */
+    flowParticles.forEach(function(fp) {
+      fp.t += fp.speed * 0.003 * delta;
+      if (fp.t > 1) fp.t -= 1;
+      var p = fp.path;
+      /* Quadratic bezier interpolation */
+      var cx = (p.from.x + p.to.x) / 2;
+      var cy = (p.from.y + p.to.y) / 2 - 15;
+      var invT = 1 - fp.t;
+      var x = invT * invT * p.from.x + 2 * invT * fp.t * cx + fp.t * fp.t * p.to.x;
+      var y = invT * invT * p.from.y + 2 * invT * fp.t * cy + fp.t * fp.t * p.to.y;
+      fp.graphic.position.set(x, y);
+      /* Fade at endpoints */
+      var edgeFade = Math.min(fp.t * 5, (1 - fp.t) * 5, 1);
+      fp.graphic.alpha = edgeFade;
+    });
+  });
+
+  /* --- Start only when visible --- */
+  app.ticker.stop();
+  var pixiStarted = false;
+  var pixiObserver = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting) {
+      if (!pixiStarted) { pixiStarted = true; }
+      app.ticker.start();
+    } else {
+      app.ticker.stop();
+    }
+  }, { threshold: 0.1 });
+  pixiObserver.observe(container);
+
+  /* --- Resize --- */
+  window.addEventListener('resize', function() {
+    W = container.clientWidth;
+    H = container.clientHeight || 340;
+    app.renderer.resize(W, H);
+    /* Note: Node positions won't update dynamically in this MVP */
+  });
 })();
 </script>
 
