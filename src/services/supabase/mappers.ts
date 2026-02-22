@@ -3,10 +3,49 @@
  * snake_case (DB) ↔ camelCase (App) 변환
  */
 
-import type { UserProfile, Interaction, LocationData } from '@/types';
+import type { UserProfile, Interaction, LocationData, SocialLinks } from '@/types';
+
+// ============================================================================
+// DB Row 타입 정의 (Supabase 스키마 기반)
+// ============================================================================
+
+/** public.users 테이블 row */
+export interface DbUserRow {
+  id: string;
+  name: string;
+  gender?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  company?: string | null;
+  title?: string | null;
+  profile_view_count?: number | null;
+  social_links?: SocialLinks | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** public.interactions 테이블 row */
+export interface DbInteractionRow {
+  id: string;
+  source_user_id: string;
+  target_user_id: string;
+  met_at: string;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  location_address?: string | null;
+  location_place_name?: string | null;
+  location_city?: string | null;
+  location_country?: string | null;
+  event_context?: string | null;
+  memo?: string | null;
+  voice_memo_url?: string | null;
+  tags?: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // DB row → UserProfile
-export function mapDbUserToProfile(dbUser: any): UserProfile {
+export function mapDbUserToProfile(dbUser: DbUserRow): UserProfile {
   return {
     id: dbUser.id,
     name: dbUser.name,
@@ -23,8 +62,8 @@ export function mapDbUserToProfile(dbUser: any): UserProfile {
 }
 
 // UserProfile → DB row (for upsert)
-export function mapProfileToDbUser(profile: Partial<UserProfile>): Record<string, any> {
-  const dbRow: Record<string, any> = {};
+export function mapProfileToDbUser(profile: Partial<UserProfile>): Partial<DbUserRow> {
+  const dbRow: Partial<DbUserRow> = {};
   if (profile.name !== undefined) dbRow.name = profile.name;
   if (profile.gender !== undefined) dbRow.gender = profile.gender;
   if (profile.bio !== undefined) dbRow.bio = profile.bio;
@@ -37,7 +76,7 @@ export function mapProfileToDbUser(profile: Partial<UserProfile>): Record<string
 }
 
 // DB row → Interaction
-export function mapDbInteractionToModel(dbRow: any): Interaction {
+export function mapDbInteractionToModel(dbRow: DbInteractionRow): Interaction {
   return {
     id: dbRow.id,
     sourceUserId: dbRow.source_user_id,
@@ -60,10 +99,32 @@ export function mapDbInteractionToModel(dbRow: any): Interaction {
   };
 }
 
+/**
+ * DB 조회 실패 시 NFC/BLE 수신 데이터로 만드는 최소 스켈레톤 프로필
+ * - userId: 반드시 실제 유저 ID (UUID)
+ * - partialData: NFC 페이로드 등 부분 정보 (선택)
+ */
+export function createSkeletonProfile(
+  userId: string,
+  partialData?: Partial<Pick<UserProfile, 'name' | 'title' | 'company' | 'avatarUrl' | 'socialLinks'>>
+): UserProfile {
+  const now = new Date().toISOString();
+  return {
+    id: userId,
+    name: partialData?.name || `User ${userId.slice(0, 8)}`,
+    title: partialData?.title,
+    company: partialData?.company,
+    avatarUrl: partialData?.avatarUrl,
+    socialLinks: partialData?.socialLinks || {},
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 // Interaction → DB row (for insert)
 export function mapInteractionToDbRow(
   interaction: Partial<Interaction> & { sourceUserId: string; targetUserId: string }
-): Record<string, any> {
+): Omit<DbInteractionRow, 'id' | 'created_at' | 'updated_at'> {
   return {
     source_user_id: interaction.sourceUserId,
     target_user_id: interaction.targetUserId,

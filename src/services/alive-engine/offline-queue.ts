@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // 타입 정의
@@ -59,7 +60,7 @@ async function loadQueue(): Promise<QueuedOperation[]> {
     if (!data) return [];
     return JSON.parse(data);
   } catch (error) {
-    console.error('[OfflineQueue] 큐 로드 실패:', error);
+    logger.error('[OfflineQueue] 큐 로드 실패:', error);
     return [];
   }
 }
@@ -72,7 +73,7 @@ async function saveQueue(queue: QueuedOperation[]): Promise<void> {
   try {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
   } catch (error) {
-    console.error('[OfflineQueue] 큐 저장 실패:', error);
+    logger.error('[OfflineQueue] 큐 저장 실패:', error);
     throw error;
   }
 }
@@ -89,7 +90,7 @@ export async function enqueue(operation: QueuedOperation): Promise<void> {
   const queue = await loadQueue();
   queue.push(operation);
   await saveQueue(queue);
-  console.log(`[OfflineQueue] 작업 추가: ${operation.type} (ID: ${operation.id})`);
+  logger.log(`[OfflineQueue] 작업 추가: ${operation.type} (ID: ${operation.id})`);
 }
 
 /**
@@ -101,7 +102,7 @@ export async function dequeue(): Promise<QueuedOperation | undefined> {
   const operation = queue.shift();
   if (operation) {
     await saveQueue(queue);
-    console.log(`[OfflineQueue] 작업 제거: ${operation.type} (ID: ${operation.id})`);
+    logger.log(`[OfflineQueue] 작업 제거: ${operation.type} (ID: ${operation.id})`);
   }
   return operation;
 }
@@ -128,7 +129,7 @@ export async function getQueueSize(): Promise<number> {
  */
 export async function clearQueue(): Promise<void> {
   await AsyncStorage.removeItem(STORAGE_KEY);
-  console.log('[OfflineQueue] 큐 전체 삭제 완료');
+  logger.log('[OfflineQueue] 큐 전체 삭제 완료');
 }
 
 /**
@@ -151,7 +152,7 @@ export async function processQueue(
       if (success) {
         // 성공: 큐에서 제거
         processed++;
-        console.log(`[OfflineQueue] 작업 성공: ${operation.type} (ID: ${operation.id})`);
+        logger.log(`[OfflineQueue] 작업 성공: ${operation.type} (ID: ${operation.id})`);
       } else {
         // 실패: 재시도 카운트 증가
         operation.retryCount++;
@@ -159,13 +160,13 @@ export async function processQueue(
         if (operation.retryCount >= MAX_RETRIES) {
           // 최대 재시도 횟수 초과: 큐에서 제거하고 경고 로그
           failed++;
-          console.warn(
+          logger.warn(
             `[OfflineQueue] 작업 최종 실패 (최대 재시도 초과): ${operation.type} (ID: ${operation.id})`
           );
         } else {
           // 재시도 가능: 큐에 유지
           remaining.push(operation);
-          console.warn(
+          logger.warn(
             `[OfflineQueue] 작업 실패 (재시도 ${operation.retryCount}/${MAX_RETRIES}): ${operation.type} (ID: ${operation.id})`
           );
         }
@@ -176,13 +177,13 @@ export async function processQueue(
 
       if (operation.retryCount >= MAX_RETRIES) {
         failed++;
-        console.error(
+        logger.error(
           `[OfflineQueue] 작업 처리 중 예외 발생 (최대 재시도 초과): ${operation.type} (ID: ${operation.id})`,
           error
         );
       } else {
         remaining.push(operation);
-        console.error(
+        logger.error(
           `[OfflineQueue] 작업 처리 중 예외 발생 (재시도 ${operation.retryCount}/${MAX_RETRIES}): ${operation.type} (ID: ${operation.id})`,
           error
         );
@@ -199,7 +200,7 @@ export async function processQueue(
     remaining: remaining.length,
   };
 
-  console.log('[OfflineQueue] 큐 처리 완료:', result);
+  logger.log('[OfflineQueue] 큐 처리 완료:', result);
   return result;
 }
 

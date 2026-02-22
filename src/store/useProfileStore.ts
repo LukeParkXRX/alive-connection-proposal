@@ -10,6 +10,7 @@ import type { UserProfile, ProfileCard, ProfileMode, SocialLinks } from '@/types
 import { supabase } from '@/services/supabase';
 import { mapProfileToDbUser, mapDbUserToProfile } from '@/services/supabase/mappers';
 import { useAuthStore } from '@/store/useAuthStore';
+import { logger } from '@/lib/logger';
 
 interface ProfileState {
   // Current user profile
@@ -34,6 +35,30 @@ interface ProfileState {
   initializeFromAuth: () => void;
 }
 
+/**
+ * profile과 mode로 ProfileCard를 생성하는 순수 헬퍼 함수.
+ * store 외부에 두어 중복 카드 생성 로직을 단일화 (DRY).
+ */
+function buildProfileCard(profile: UserProfile, mode: ProfileMode): ProfileCard {
+  const visibleLinks: SocialLinks = {};
+  const keys =
+    mode === 'business'
+      ? ['email', 'phone', 'linkedin', 'website']
+      : ['twitter', 'instagram', 'whatsapp'];
+  keys.forEach((key) => {
+    if (profile.socialLinks[key]) visibleLinks[key] = profile.socialLinks[key];
+  });
+  return {
+    userId: profile.id,
+    mode,
+    displayName: profile.name,
+    displayTitle: profile.title,
+    displayCompany: profile.company,
+    avatarUrl: profile.avatarUrl,
+    visibleLinks,
+  };
+}
+
 export const useProfileStore = create<ProfileState>()(
   persist(
     (set, get) => ({
@@ -42,68 +67,35 @@ export const useProfileStore = create<ProfileState>()(
       currentMode: 'business',
 
       setProfile: (profile) => {
-        set({ profile });
-        // Auto-generate active card
-        const card = get().generateActiveCard();
-        set({ activeCard: card });
+        // profile과 activeCard를 단일 set()으로 동시 업데이트 (이중 리렌더 방지)
+        const card = buildProfileCard(profile, get().currentMode);
+        set({ profile, activeCard: card });
       },
 
       updateProfile: (updates) => {
         const current = get().profile;
-        if (current) {
-          const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
-          set({ profile: updated });
-          // Regenerate active card
-          const card = get().generateActiveCard();
-          set({ activeCard: card });
-          // Supabase 비동기 동기화
-          get().syncToSupabase().catch((err) => {
-            console.warn('[Profile] Supabase 동기화 실패:', err);
-          });
-        }
+        if (!current) return;
+        const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
+        // profile과 activeCard를 단일 set()으로 동시 업데이트 (이중 리렌더 방지)
+        const card = buildProfileCard(updated, get().currentMode);
+        set({ profile: updated, activeCard: card });
+        // Supabase 비동기 동기화
+        get().syncToSupabase().catch((err) => {
+          logger.warn('[Profile] Supabase 동기화 실패:', err);
+        });
       },
 
       setCurrentMode: (mode) => {
-        set({ currentMode: mode });
-        // Regenerate active card with new mode
-        const card = get().generateActiveCard();
-        set({ activeCard: card });
+        const profile = get().profile;
+        // currentMode와 activeCard를 단일 set()으로 동시 업데이트 (이중 리렌더 방지)
+        const card = profile ? buildProfileCard(profile, mode) : null;
+        set({ currentMode: mode, activeCard: card });
       },
 
       generateActiveCard: () => {
         const { profile, currentMode } = get();
         if (!profile) return null;
-
-        // Filter visible links based on mode
-        const visibleLinks: SocialLinks = {};
-
-        if (currentMode === 'business') {
-          // Business mode: all professional links
-          const businessKeys = ['email', 'phone', 'linkedin', 'website'];
-          businessKeys.forEach((key) => {
-            if (profile.socialLinks[key]) {
-              visibleLinks[key] = profile.socialLinks[key];
-            }
-          });
-        } else {
-          // Casual mode: social links only
-          const casualKeys = ['twitter', 'instagram', 'whatsapp'];
-          casualKeys.forEach((key) => {
-            if (profile.socialLinks[key]) {
-              visibleLinks[key] = profile.socialLinks[key];
-            }
-          });
-        }
-
-        return {
-          userId: profile.id,
-          mode: currentMode,
-          displayName: profile.name,
-          displayTitle: profile.title,
-          displayCompany: profile.company,
-          avatarUrl: profile.avatarUrl,
-          visibleLinks,
-        };
+        return buildProfileCard(profile, currentMode);
       },
 
       clearProfile: () => {
@@ -125,7 +117,7 @@ export const useProfileStore = create<ProfileState>()(
           if (error) throw error;
           return true;
         } catch (err) {
-          console.error('[Profile] syncToSupabase 실패:', err);
+          logger.error('[Profile] syncToSupabase 실패:', err);
           return false;
         }
       },
@@ -145,12 +137,12 @@ export const useProfileStore = create<ProfileState>()(
           if (error) throw error;
 
           const loaded = mapDbUserToProfile(data);
-          set({ profile: loaded });
-          const card = get().generateActiveCard();
-          set({ activeCard: card });
+          // profile과 activeCard를 단일 set()으로 동시 업데이트 (이중 리렌더 방지)
+          const card = buildProfileCard(loaded, get().currentMode);
+          set({ profile: loaded, activeCard: card });
           return true;
         } catch (err) {
-          console.error('[Profile] loadFromSupabase 실패:', err);
+          logger.error('[Profile] loadFromSupabase 실패:', err);
           return false;
         }
       },
@@ -169,9 +161,9 @@ export const useProfileStore = create<ProfileState>()(
           return;
         }
 
-        set({ profile: dbUser });
-        const card = get().generateActiveCard();
-        set({ activeCard: card });
+        // profile과 activeCard를 단일 set()으로 동시 업데이트 (이중 리렌더 방지)
+        const card = buildProfileCard(dbUser, get().currentMode);
+        set({ profile: dbUser, activeCard: card });
       },
     }),
     {

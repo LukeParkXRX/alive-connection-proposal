@@ -17,30 +17,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { useAuthStore } from '@/store/useAuthStore';
+import type { RootStackParamList } from '@/types';
 import { useMessageStore } from '@/store/useMessageStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { getChannelName } from '@/services/messaging/realtime';
 import type { ChatMessage } from '@/services/messaging/types';
 
+// Chat 화면의 타입 정의
+type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
+type ChatNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Chat'>;
+
 export const ChatScreen: React.FC = () => {
-  const route = useRoute<any>();
-  const navigation = useNavigation();
+  const route = useRoute<ChatRouteProp>();
+  const navigation = useNavigation<ChatNavigationProp>();
   const { userId: targetUserId, userName } = route.params;
-  const { user: currentUser } = useAuthStore();
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const currentUser = useAuthStore((s) => s.user);
   const myUserId = currentUser?.id || '';
 
-  const {
-    conversations,
-    typingUsers,
-    openChat,
-    closeChat,
-    sendMessage,
-    setTyping,
-    markAsRead,
-  } = useMessageStore();
+  const conversations = useMessageStore((s) => s.conversations);
+  const typingUsers = useMessageStore((s) => s.typingUsers);
+  const openChat = useMessageStore((s) => s.openChat);
+  const closeChat = useMessageStore((s) => s.closeChat);
+  const sendMessage = useMessageStore((s) => s.sendMessage);
+  const setTyping = useMessageStore((s) => s.setTyping);
+  const markAsRead = useMessageStore((s) => s.markAsRead);
 
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
@@ -59,6 +65,13 @@ export const ChatScreen: React.FC = () => {
     }
     return () => closeChat();
   }, [myUserId, targetUserId]);
+
+  // 언마운트 시 타이핑 타임아웃 정리 (메모리 누수 방지)
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, []);
 
   // 새 메시지 도착 시 읽음 처리
   useEffect(() => {

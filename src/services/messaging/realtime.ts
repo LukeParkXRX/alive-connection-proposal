@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/services/supabase';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { ChatMessage, TypingEvent, ReadReceiptEvent } from './types';
 
 /** 채널명 생성 — 두 유저 ID를 정렬하여 고유 채널 보장 */
@@ -23,6 +24,13 @@ interface ChatCallbacks {
   onReadReceipt: (event: ReadReceiptEvent) => void;
 }
 
+/**
+ * 공유 채널 맵 — sendMessage/sendTyping/sendReadReceipt가
+ * subscribeToChat이 만든 채널을 재사용하도록 보장
+ * (각 호출마다 새 채널 레퍼런스를 생성하는 버그 방지)
+ */
+const _activeChannels = new Map<string, RealtimeChannel>();
+
 /** 채팅 채널 구독 — 메시지, 타이핑, 읽음확인 수신 */
 export function subscribeToChat(
   myUserId: string,
@@ -34,6 +42,9 @@ export function subscribeToChat(
   const channel = supabase.channel(channelName, {
     config: { broadcast: { self: false } },
   });
+
+  // 공유 채널 맵에 등록 — 전송 함수가 이 채널을 재사용
+  _activeChannels.set(channelName, channel);
 
   channel
     .on('broadcast', { event: 'message' }, ({ payload }) => {
@@ -54,14 +65,26 @@ export function subscribeToChat(
     .subscribe();
 
   return () => {
+    // 구독 해제 시 맵에서도 제거
+    _activeChannels.delete(channelName);
     supabase.removeChannel(channel);
   };
 }
 
+/**
+ * 채널명으로 활성 채널 조회
+ * subscribeToChat이 등록한 채널을 반환하며, 없으면 새로 참조 (폴백)
+ */
+function getChannel(channelName: string): RealtimeChannel {
+  const existing = _activeChannels.get(channelName);
+  if (existing) return existing;
+  // 폴백: 구독 없이 직접 전송 시 (주의: 연결이 보장되지 않을 수 있음)
+  return supabase.channel(channelName);
+}
+
 /** 메시지 전송 */
 export async function sendMessage(channelName: string, message: ChatMessage): Promise<void> {
-  const channel = supabase.channel(channelName);
-  await channel.send({
+  await getChannel(channelName).send({
     type: 'broadcast',
     event: 'message',
     payload: message,
@@ -74,8 +97,7 @@ export async function sendTyping(
   userId: string,
   isTyping: boolean
 ): Promise<void> {
-  const channel = supabase.channel(channelName);
-  await channel.send({
+  await getChannel(channelName).send({
     type: 'broadcast',
     event: 'typing',
     payload: { userId, isTyping } as TypingEvent,
@@ -88,8 +110,7 @@ export async function sendReadReceipt(
   userId: string,
   lastReadMessageId: string
 ): Promise<void> {
-  const channel = supabase.channel(channelName);
-  await channel.send({
+  await getChannel(channelName).send({
     type: 'broadcast',
     event: 'read',
     payload: { userId, lastReadMessageId } as ReadReceiptEvent,

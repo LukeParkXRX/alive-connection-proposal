@@ -95,10 +95,11 @@ export const useExchangeStore = create<ExchangeStoreState>((set, get) => ({
         break;
 
       case 'completed':
+        // event.data는 discriminated union으로 Connection 타입이 보장됨 (캐스팅 불필요)
         set({
           currentEvent: null,
           isExchanging: false,
-          lastCompletedExchange: event.data as Connection || null,
+          lastCompletedExchange: event.data,
         });
         break;
 

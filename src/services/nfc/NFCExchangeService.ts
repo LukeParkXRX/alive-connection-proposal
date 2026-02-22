@@ -6,6 +6,7 @@
  */
 
 import { nfcExchanger } from './NfcExchanger';
+import { logger } from '@/lib/logger';
 import type { ExchangeEvent } from '@/types/ble';
 import type { ProfileCard, NfcHandshakeResult } from '@/types';
 
@@ -34,7 +35,7 @@ class NFCExchangeService {
     try {
       const initialized = await nfcExchanger.initialize();
       if (!initialized) {
-        console.warn('[NFC Service] NFC 초기화 실패');
+        logger.warn('[NFC Service] NFC 초기화 실패');
         return false;
       }
 
@@ -45,10 +46,10 @@ class NFCExchangeService {
       });
 
       this.isListening = true;
-      console.log('[NFC Service] NFC 리스닝 시작');
+      logger.log('[NFC Service] NFC 리스닝 시작');
       return true;
     } catch (err) {
-      console.warn('[NFC Service] 리스닝 시작 실패:', err);
+      logger.warn('[NFC Service] 리스닝 시작 실패:', err);
       return false;
     }
   }
@@ -60,9 +61,9 @@ class NFCExchangeService {
     try {
       await nfcExchanger.stopHandshakeListener();
       this.isListening = false;
-      console.log('[NFC Service] NFC 리스닝 중지');
+      logger.log('[NFC Service] NFC 리스닝 중지');
     } catch (err) {
-      console.warn('[NFC Service] 리스닝 중지 실패:', err);
+      logger.warn('[NFC Service] 리스닝 중지 실패:', err);
     }
   }
 

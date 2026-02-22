@@ -3,9 +3,11 @@
  */
 
 import { create } from 'zustand';
+import { logger } from '@/lib/logger';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { mapDbUserToProfile } from '@/services/supabase/mappers';
+import { resetBeingState } from '@/services/alive-engine/client';
 import type { UserProfile } from '@/types';
 
 interface AuthState {
@@ -40,6 +42,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     signOut: async () => {
         await supabase.auth.signOut();
+        // 로그아웃 시 Being 상태 초기화 — 다음 로그인 시 재등록 보장
+        await resetBeingState();
         set({ session: null, user: null, dbUser: null });
     },
 
@@ -66,14 +70,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         .single();
 
                     if (retryError) {
-                        console.error('[Auth] DB user fetch 재시도 실패:', retryError);
+                        logger.error('[Auth] DB user fetch 재시도 실패:', retryError);
                         return null;
                     }
                     const profile = mapDbUserToProfile(retryData);
                     set({ dbUser: profile });
                     return profile;
                 }
-                console.error('[Auth] DB user fetch 실패:', error);
+                logger.error('[Auth] DB user fetch 실패:', error);
                 return null;
             }
 
@@ -81,7 +85,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ dbUser: profile });
             return profile;
         } catch (err) {
-            console.error('[Auth] DB user fetch 예외:', err);
+            logger.error('[Auth] DB user fetch 예외:', err);
             return null;
         }
     },

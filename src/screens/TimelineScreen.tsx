@@ -36,7 +36,9 @@ interface TimelineSection {
 
 export const TimelineScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { connections, searchConnections } = useConnectionStore();
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const connections = useConnectionStore((s) => s.connections);
+  const searchConnections = useConnectionStore((s) => s.searchConnections);
   const [searchQuery, setSearchQuery] = useState('');
   const { wp } = useResponsive();
   const { colors: c } = useThemeColors();

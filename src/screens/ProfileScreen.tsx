@@ -45,7 +45,12 @@ const SOCIAL_LINKS: SocialLinkItem[] = [
 ];
 
 export const ProfileScreen: React.FC = () => {
-  const { profile, currentMode, updateProfile, setCurrentMode } = useProfileStore();
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const profile = useProfileStore((s) => s.profile);
+  const currentMode = useProfileStore((s) => s.currentMode);
+  const updateProfile = useProfileStore((s) => s.updateProfile);
+  const setCurrentMode = useProfileStore((s) => s.setCurrentMode);
+  const signOut = useAuthStore((s) => s.signOut);
 
   const [name, setName] = useState(profile?.name || '');
   const [gender, setGender] = useState(profile?.gender || '');
@@ -53,10 +58,8 @@ export const ProfileScreen: React.FC = () => {
   const [title, setTitle] = useState(profile?.title || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [socialLinks, setSocialLinks] = useState<SocialLinks>(profile?.socialLinks || {});
-
-  const { signOut } = useAuthStore();
-  const { wp, fp, isTablet } = useResponsive();
-  const { colors: c, isDark } = useThemeColors();
+  const { wp, isTablet } = useResponsive();
+  const { colors: c } = useThemeColors();
 
   const handleModeToggle = (mode: ProfileMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

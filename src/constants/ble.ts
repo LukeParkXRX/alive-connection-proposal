@@ -4,14 +4,16 @@
  */
 
 // ALIVE Connection 전용 BLE 서비스/특성 UUID
+// 형식: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (각 x는 유효한 hex 문자: 0-9, A-F)
+// 식별 패턴: A11FE00x - ALIVE Connection 시그니처 (A=0xA, 11=11, FE≈VE, 00x=순번)
 export const ALIVE_BLE_CONFIG = {
-  // 서비스 UUID (128-bit custom)
-  SERVICE_UUID: 'A11VE000-C0NN-EC10-N000-XRX5TUD10000',
+  // 서비스 UUID (128-bit custom, 유효한 hex 전용)
+  SERVICE_UUID: 'A11FE000-C0FF-EC10-8000-000500D10000',
 
-  // Characteristic UUIDs
-  CHAR_USER_ID: 'A11VE001-C0NN-EC10-N000-XRX5TUD10000',      // Read: userId hash
-  CHAR_EXCHANGE_REQ: 'A11VE002-C0NN-EC10-N000-XRX5TUD10000',  // Write: 교환 요청
-  CHAR_EXCHANGE_RES: 'A11VE003-C0NN-EC10-N000-XRX5TUD10000',  // Notify: 교환 응답
+  // Characteristic UUIDs (순번 0~3으로 구분)
+  CHAR_USER_ID: 'A11FE001-C0FF-EC10-8000-000500D10000',      // Read: userId hash
+  CHAR_EXCHANGE_REQ: 'A11FE002-C0FF-EC10-8000-000500D10000',  // Write: 교환 요청
+  CHAR_EXCHANGE_RES: 'A11FE003-C0FF-EC10-8000-000500D10000',  // Notify: 교환 응답
 
   // Advertising 설정
   ADVERTISING: {

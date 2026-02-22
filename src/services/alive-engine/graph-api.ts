@@ -6,6 +6,7 @@
  */
 
 import { apiFetch, ApiError, getBeingId, ensureBeingExists } from './client';
+import { logger } from '@/lib/logger';
 import type {
   OntologyGraph,
   OntologyNode,
@@ -118,7 +119,7 @@ export const graphApi = {
       }
 
       // 기타 에러는 빈 그래프 반환 (오프라인 허용)
-      console.warn('graphApi.getGraph 실패:', err);
+      logger.warn('graphApi.getGraph 실패:', err);
       return { nodes: [], edges: [] };
     }
   },
@@ -141,7 +142,7 @@ export const graphApi = {
       const data = await apiFetch<ApiStatsResponse>(`/api/v1/beings/${id}/knowledge/stats`);
       return toGraphStats(data);
     } catch (err) {
-      console.warn('graphApi.getStats 실패:', err);
+      logger.warn('graphApi.getStats 실패:', err);
       return { totalNodes: 0, totalEdges: 0, typeDistribution: {} as GraphStats['typeDistribution'] };
     }
   },
@@ -238,7 +239,7 @@ export const graphApi = {
 
       return toOntologyNodes(data.results);
     } catch (err) {
-      console.warn('graphApi.searchNodes 실패:', err);
+      logger.warn('graphApi.searchNodes 실패:', err);
       return [];
     }
   },
@@ -266,7 +267,7 @@ export const graphApi = {
 
       return toOntologyNodes(data.results);
     } catch (err) {
-      console.warn('graphApi.semanticSearch 실패:', err);
+      logger.warn('graphApi.semanticSearch 실패:', err);
       return [];
     }
   },

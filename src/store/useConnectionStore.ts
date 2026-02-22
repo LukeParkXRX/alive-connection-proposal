@@ -4,14 +4,15 @@
  */
 
 import { create } from 'zustand';
+import { logger } from '@/lib/logger';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
 import type { Connection, Interaction, UserProfile, LocationData } from '@/types';
 import { useGraphStore } from '@/store/useGraphStore';
 import { supabase } from '@/services/supabase';
-import { mapDbUserToProfile, mapInteractionToDbRow } from '@/services/supabase/mappers';
+import { mapDbUserToProfile, mapInteractionToDbRow, createSkeletonProfile } from '@/services/supabase/mappers';
 import { useAuthStore } from '@/store/useAuthStore';
+import LocationService from '@/services/location/LocationService';
 
 interface ConnectionState {
   // All connections (cached locally)
@@ -70,7 +71,7 @@ export const useConnectionStore = create<ConnectionState>()(
           if (conn) {
             const personNodeId = conn.user.id;
             useGraphStore.getState().enrichFromMemo(personNodeId, updates.memo).catch((err) => {
-              console.warn('[Graph] 메모 엔티티 추출 실패:', err);
+              logger.warn('[Graph] 메모 엔티티 추출 실패:', err);
             });
           }
         }
@@ -82,7 +83,7 @@ export const useConnectionStore = create<ConnectionState>()(
             .update({ memo: updates.memo, updated_at: new Date().toISOString() })
             .eq('id', interactionId)
             .then(({ error }) => {
-              if (error) console.warn('[Connections] 메모 Supabase 동기화 실패:', error);
+              if (error) logger.warn('[Connections] 메모 Supabase 동기화 실패:', error);
             });
         }
       },
@@ -148,12 +149,12 @@ export const useConnectionStore = create<ConnectionState>()(
             .single();
 
           if (error) {
-            console.warn('[Connections] Interaction 저장 실패:', error);
+            logger.warn('[Connections] Interaction 저장 실패:', error);
             return null;
           }
           return data?.id || null;
         } catch (err) {
-          console.error('[Connections] Interaction 저장 예외:', err);
+          logger.error('[Connections] Interaction 저장 예외:', err);
           return null;
         }
       },
@@ -168,7 +169,7 @@ export const useConnectionStore = create<ConnectionState>()(
           const myDbUser = useAuthStore.getState().dbUser;
 
           if (!myDbUser) {
-            console.warn('[Handshake] 로그인된 DB 유저가 없음');
+            logger.warn('[Handshake] 로그인된 DB 유저가 없음');
             return;
           }
 
@@ -183,53 +184,18 @@ export const useConnectionStore = create<ConnectionState>()(
 
             if (error || !data) {
               // 유저를 찾을 수 없는 경우 skeleton 프로필
-              console.warn('[Handshake] 상대방 유저 조회 실패:', error);
-              targetUser = {
-                id: userId,
-                name: `User ${userId.slice(0, 8)}`,
-                socialLinks: {},
-                createdAt: metAt,
-                updatedAt: metAt,
-              };
+              logger.warn('[Handshake] 상대방 유저 조회 실패:', error);
+              targetUser = createSkeletonProfile(userId);
             } else {
               targetUser = mapDbUserToProfile(data);
             }
           } catch {
-            targetUser = {
-              id: userId,
-              name: `User ${userId.slice(0, 8)}`,
-              socialLinks: {},
-              createdAt: metAt,
-              updatedAt: metAt,
-            };
+            targetUser = createSkeletonProfile(userId);
           }
 
-          // 2. 위치 캡처
-          let location: LocationData = { latitude: 0, longitude: 0 };
-          try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted') {
-              const loc = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-              });
-              const [address] = await Location.reverseGeocodeAsync({
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-              });
-              location = {
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-                address: address
-                  ? `${address.street || ''} ${address.city || ''}`.trim()
-                  : undefined,
-                placeName: address?.name || undefined,
-                city: address?.city || undefined,
-                country: address?.country || undefined,
-              };
-            }
-          } catch (locErr) {
-            console.warn('[Handshake] 위치 캡처 실패:', locErr);
-          }
+          // 2. 위치 캡처 — LocationService 싱글톤 사용
+          const capturedLocation = await LocationService.getInstance().getCurrentLocation();
+          const location: LocationData = capturedLocation ?? { latitude: 0, longitude: 0 };
 
           // 3. Supabase interactions 테이블에 저장
           const interactionId = await get().saveInteractionToSupabase({
@@ -257,7 +223,7 @@ export const useConnectionStore = create<ConnectionState>()(
 
           // 5. 지식그래프 동기화 (Optional)
           useGraphStore.getState().addPersonNode(targetUser, connection.interaction).catch((err) => {
-            console.warn('[Graph] 자동 핸드셰이크 그래프 동기화 실패:', err);
+            logger.warn('[Graph] 자동 핸드셰이크 그래프 동기화 실패:', err);
           });
 
           // 6. HandshakeSuccess 오버레이 표시
@@ -286,7 +252,7 @@ export const useConnectionStore = create<ConnectionState>()(
             .order('met_at', { ascending: false });
 
           if (error) {
-            console.error('[Connections] Supabase 로드 실패:', error);
+            logger.error('[Connections] Supabase 로드 실패:', error);
             return;
           }
           if (!data) return;
@@ -332,7 +298,7 @@ export const useConnectionStore = create<ConnectionState>()(
 
           set({ connections });
         } catch (err) {
-          console.error('[Connections] Supabase 로드 예외:', err);
+          logger.error('[Connections] Supabase 로드 예외:', err);
         } finally {
           set({ isLoading: false });
         }
@@ -345,6 +311,10 @@ export const useConnectionStore = create<ConnectionState>()(
     {
       name: 'alive-connections-store',
       storage: createJSONStorage(() => AsyncStorage),
+      // connections만 영속화 — 로딩 상태·임시 상태는 제외
+      partialize: (state) => ({
+        connections: state.connections,
+      }),
     }
   )
 );

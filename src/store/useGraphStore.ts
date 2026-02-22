@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { logger } from '@/lib/logger';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { UserProfile, Interaction } from '@/types';
@@ -157,7 +158,7 @@ export const useGraphStore = create<GraphState>()(
       initializeGraph: async () => {
         const state = get();
         if (state.isInitialized) {
-          console.log('[GraphStore] 이미 초기화됨, 스킵');
+          logger.log('[GraphStore] 이미 초기화됨, 스킵');
           return;
         }
 
@@ -168,10 +169,15 @@ export const useGraphStore = create<GraphState>()(
           await get().checkOnlineStatus();
 
           if (get().isOnline) {
-            console.log('[GraphStore] 온라인 모드 - 서버에서 그래프 로드');
+            logger.log('[GraphStore] 온라인 모드 - 서버에서 그래프 로드');
 
             // 2. Being 존재 확인
             const beingId = await getBeingId();
+            if (!beingId) {
+              logger.warn('[GraphStore] beingId 없음 — 인증 필요');
+              set({ isInitialized: true, isOnline: false });
+              return;
+            }
             await ensureBeingExists(beingId);
 
             // 3. 최신 그래프 로드
@@ -180,14 +186,14 @@ export const useGraphStore = create<GraphState>()(
             // 4. 오프라인 큐 동기화
             await get().syncPendingOperations();
           } else {
-            console.log('[GraphStore] 오프라인 모드 - 로컬 캐시 사용');
+            logger.log('[GraphStore] 오프라인 모드 - 로컬 캐시 사용');
             // 오프라인 시 AsyncStorage에 persist된 그래프 사용 (Zustand 자동 처리)
           }
 
           set({ isInitialized: true });
-          console.log('[GraphStore] 초기화 완료');
+          logger.log('[GraphStore] 초기화 완료');
         } catch (error) {
-          console.warn('[GraphStore] 초기화 실패 (오프라인 캐시 사용)', error);
+          logger.warn('[GraphStore] 초기화 실패 (오프라인 캐시 사용)', error);
           // 초기화 실패해도 오프라인 모드로 동작 가능
           set({ isInitialized: true, isOnline: false });
         } finally {
@@ -204,6 +210,10 @@ export const useGraphStore = create<GraphState>()(
         try {
           const { isOnline } = get();
           const beingId = await getBeingId();
+          if (!beingId) {
+            logger.warn('[GraphStore] addPersonNode: beingId 없음 — 인증 필요');
+            return;
+          }
 
           // 생성할 노드 목록
           const nodesToCreate: Array<{
@@ -304,26 +314,29 @@ export const useGraphStore = create<GraphState>()(
           // 6. 온라인/오프라인 처리
           // -----------------------------------------------------------------
           if (isOnline) {
-            // 온라인: API 직접 호출
-            for (const node of nodesToCreate) {
-              try {
-                await graphApi.createNode(node, beingId);
-                console.log(`[GraphStore] 노드 생성 성공: ${node.label}`);
-              } catch (error) {
-                console.warn(`[GraphStore] 노드 생성 실패: ${node.label}`, error);
+            // 온라인: API 병렬 호출 (N+1 순차 루프 → Promise.allSettled)
+            const nodeResults = await Promise.allSettled(
+              nodesToCreate.map((node) => graphApi.createNode(node, beingId))
+            );
+            nodeResults.forEach((result, i) => {
+              if (result.status === 'fulfilled') {
+                logger.log(`[GraphStore] 노드 생성 성공: ${nodesToCreate[i].label}`);
+              } else {
+                logger.warn(`[GraphStore] 노드 생성 실패: ${nodesToCreate[i].label}`, result.reason);
               }
-            }
+            });
 
-            for (const edge of edgesToCreate) {
-              try {
-                await graphApi.createEdge(edge, beingId);
-                console.log(
-                  `[GraphStore] 엣지 생성 성공: ${edge.source} → ${edge.relation} → ${edge.target}`
-                );
-              } catch (error) {
-                console.warn(`[GraphStore] 엣지 생성 실패`, error);
+            const edgeResults = await Promise.allSettled(
+              edgesToCreate.map((edge) => graphApi.createEdge(edge, beingId))
+            );
+            edgeResults.forEach((result, i) => {
+              const edge = edgesToCreate[i];
+              if (result.status === 'fulfilled') {
+                logger.log(`[GraphStore] 엣지 생성 성공: ${edge.source} → ${edge.relation} → ${edge.target}`);
+              } else {
+                logger.warn(`[GraphStore] 엣지 생성 실패: ${edge.source} → ${edge.relation} → ${edge.target}`, result.reason);
               }
-            }
+            });
 
             // 최신 그래프 리프레시
             await get().refreshGraph();
@@ -337,7 +350,7 @@ export const useGraphStore = create<GraphState>()(
               await enqueue(createEdgeOperation(beingId, edge));
             }
 
-            console.log('[GraphStore] 오프라인 모드 - 큐에 작업 추가');
+            logger.log('[GraphStore] 오프라인 모드 - 큐에 작업 추가');
 
             // 로컬 그래프 상태 업데이트 (낙관적 업데이트)
             set((state) => {
@@ -367,9 +380,9 @@ export const useGraphStore = create<GraphState>()(
             });
           }
 
-          console.log('[GraphStore] addPersonNode 완료');
+          logger.log('[GraphStore] addPersonNode 완료');
         } catch (error) {
-          console.error('[GraphStore] addPersonNode 에러', error);
+          logger.error('[GraphStore] addPersonNode 에러', error);
         } finally {
           set({ isLoading: false });
         }
@@ -384,6 +397,10 @@ export const useGraphStore = create<GraphState>()(
         try {
           const { isOnline } = get();
           const beingId = await getBeingId();
+          if (!beingId) {
+            logger.warn('[GraphStore] addRelationshipEdge: beingId 없음 — 인증 필요');
+            return;
+          }
 
           const edgeData = {
             source: sourceId,
@@ -394,17 +411,16 @@ export const useGraphStore = create<GraphState>()(
           if (isOnline) {
             // 온라인: API 직접 호출
             await graphApi.createEdge(edgeData, beingId);
-            console.log(
+            logger.log(
               `[GraphStore] 엣지 생성 성공: ${sourceId} → ${relationType} → ${targetId}`
             );
 
             // 최신 그래프 리프레시
             await get().refreshGraph();
           } else {
-            // 오프라인: 큐에 추가
-            const beingIdForQueue = await getBeingId();
-            await enqueue(createEdgeOperation(beingIdForQueue, edgeData));
-            console.log('[GraphStore] 오프라인 모드 - 엣지 작업 큐에 추가');
+            // 오프라인: 큐에 추가 (이미 검증된 beingId 재사용)
+            await enqueue(createEdgeOperation(beingId, edgeData));
+            logger.log('[GraphStore] 오프라인 모드 - 엣지 작업 큐에 추가');
 
             // 로컬 그래프 상태 업데이트
             set((state) => ({
@@ -424,7 +440,7 @@ export const useGraphStore = create<GraphState>()(
             }));
           }
         } catch (error) {
-          console.error('[GraphStore] addRelationshipEdge 에러', error);
+          logger.error('[GraphStore] addRelationshipEdge 에러', error);
         } finally {
           set({ isLoading: false });
         }
@@ -442,7 +458,7 @@ export const useGraphStore = create<GraphState>()(
           // 1. person 노드의 이름 찾기
           const personNode = graph.nodes.find((n) => n.id === personNodeId);
           if (!personNode) {
-            console.warn(`[GraphStore] 노드 ID ${personNodeId}를 찾을 수 없음`);
+            logger.warn(`[GraphStore] 노드 ID ${personNodeId}를 찾을 수 없음`);
             return;
           }
 
@@ -459,23 +475,27 @@ export const useGraphStore = create<GraphState>()(
               assistant_response: assistantResponse,
             });
 
-            console.log('[GraphStore] LLM 엔티티 추출 완료', result);
+            logger.log('[GraphStore] LLM 엔티티 추출 완료', result);
 
             // 백엔드에서 자동으로 노드/엣지가 생성되었으므로 그래프 리프레시
             await get().refreshGraph();
           } else {
             // 오프라인: 큐에 추가
             const beingIdForQueue = await getBeingId();
+            if (!beingIdForQueue) {
+              logger.warn('[GraphStore] enrichFromMemo: beingId 없음 — 인증 필요');
+              return;
+            }
             await enqueue(
               createConversationOperation(beingIdForQueue, {
                 user_message: userMessage,
                 assistant_response: assistantResponse,
               })
             );
-            console.log('[GraphStore] 오프라인 모드 - 대화 처리 작업 큐에 추가');
+            logger.log('[GraphStore] 오프라인 모드 - 대화 처리 작업 큐에 추가');
           }
         } catch (error) {
-          console.error('[GraphStore] enrichFromMemo 에러', error);
+          logger.error('[GraphStore] enrichFromMemo 에러', error);
         } finally {
           set({ isLoading: false });
         }
@@ -491,10 +511,19 @@ export const useGraphStore = create<GraphState>()(
           if (isOnline) {
             // 온라인: API 검색 사용
             const beingId = await getBeingId();
+            if (!beingId) {
+              logger.warn('[GraphStore] searchGraph: beingId 없음 — 오프라인 검색으로 폴백');
+              // beingId 없으면 로컬 검색으로 폴백
+              const lowerQuery = query.toLowerCase();
+              return graph.nodes.filter((node) =>
+                node.label.toLowerCase().includes(lowerQuery) ||
+                node.content?.toLowerCase().includes(lowerQuery)
+              );
+            }
 
             // 일반 검색 (graphApi가 이미 OntologyNode[]로 변환)
             const results = await graphApi.searchNodes(query, beingId);
-            console.log(`[GraphStore] 검색 결과: ${results.length}개 노드`);
+            logger.log(`[GraphStore] 검색 결과: ${results.length}개 노드`);
             return results;
           } else {
             // 오프라인: 로컬 그래프에서 label 매칭
@@ -504,11 +533,11 @@ export const useGraphStore = create<GraphState>()(
               node.content?.toLowerCase().includes(lowerQuery)
             );
 
-            console.log(`[GraphStore] 오프라인 검색 결과: ${matchedNodes.length}개 노드`);
+            logger.log(`[GraphStore] 오프라인 검색 결과: ${matchedNodes.length}개 노드`);
             return matchedNodes;
           }
         } catch (error) {
-          console.error('[GraphStore] searchGraph 에러', error);
+          logger.error('[GraphStore] searchGraph 에러', error);
           return [];
         }
       },
@@ -521,13 +550,17 @@ export const useGraphStore = create<GraphState>()(
           const { isOnline } = get();
 
           if (!isOnline) {
-            console.log('[GraphStore] 오프라인 상태 - 동기화 스킵');
+            logger.log('[GraphStore] 오프라인 상태 - 동기화 스킵');
             return;
           }
 
-          console.log('[GraphStore] 오프라인 큐 동기화 시작');
+          logger.log('[GraphStore] 오프라인 큐 동기화 시작');
 
           const beingId = await getBeingId();
+          if (!beingId) {
+            logger.warn('[GraphStore] syncPendingOperations: beingId 없음 — 인증 필요');
+            return;
+          }
 
           // executor: 작업 타입별로 API 호출 (성공: true, 실패: false)
           const executor = async (operation: any): Promise<boolean> => {
@@ -550,23 +583,23 @@ export const useGraphStore = create<GraphState>()(
                   return true;
 
                 default:
-                  console.warn(`[GraphStore] 알 수 없는 작업 타입: ${operation.type}`);
+                  logger.warn(`[GraphStore] 알 수 없는 작업 타입: ${operation.type}`);
                   return false;
               }
             } catch (error) {
-              console.warn(`[GraphStore] 큐 작업 실패: ${operation.type}`, error);
+              logger.warn(`[GraphStore] 큐 작업 실패: ${operation.type}`, error);
               return false;
             }
           };
 
           // 큐 처리
           await processQueue(executor);
-          console.log('[GraphStore] 큐 동기화 완료');
+          logger.log('[GraphStore] 큐 동기화 완료');
 
           // 최신 그래프 상태 반영
           await get().refreshGraph();
         } catch (error) {
-          console.error('[GraphStore] syncPendingOperations 에러', error);
+          logger.error('[GraphStore] syncPendingOperations 에러', error);
         }
       },
 
@@ -577,9 +610,9 @@ export const useGraphStore = create<GraphState>()(
         try {
           const isHealthy = await checkApiHealth();
           set({ isOnline: isHealthy });
-          console.log(`[GraphStore] API 상태: ${isHealthy ? '온라인' : '오프라인'}`);
+          logger.log(`[GraphStore] API 상태: ${isHealthy ? '온라인' : '오프라인'}`);
         } catch (error) {
-          console.warn('[GraphStore] API 상태 체크 실패 (오프라인 간주)', error);
+          logger.warn('[GraphStore] API 상태 체크 실패 (오프라인 간주)', error);
           set({ isOnline: false });
         }
       },
@@ -590,6 +623,10 @@ export const useGraphStore = create<GraphState>()(
       refreshGraph: async () => {
         try {
           const beingId = await getBeingId();
+          if (!beingId) {
+            logger.warn('[GraphStore] refreshGraph: beingId 없음 — 인증 필요');
+            return;
+          }
           // graphApi.getGraph()는 이미 OntologyGraph 형식으로 변환된 결과를 반환
           const graph = await graphApi.getGraph(beingId);
 
@@ -598,11 +635,11 @@ export const useGraphStore = create<GraphState>()(
             lastSyncAt: new Date().toISOString(),
           });
 
-          console.log(
+          logger.log(
             `[GraphStore] 그래프 리프레시 완료 (노드: ${graph.nodes.length}, 엣지: ${graph.edges.length})`
           );
         } catch (error) {
-          console.error('[GraphStore] refreshGraph 에러', error);
+          logger.error('[GraphStore] refreshGraph 에러', error);
         }
       },
     }),

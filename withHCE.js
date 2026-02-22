@@ -16,7 +16,7 @@ function withHceManifest(config) {
         // Add features
         const usesFeatures = androidManifest['uses-feature'] || [];
         if (!usesFeatures.find(f => f.$['android:name'] === 'android.hardware.nfc.hce')) {
-            usesFeatures.push({ $: { 'android:name': 'android.hardware.nfc.hce', 'android:required': 'true' } });
+            usesFeatures.push({ $: { 'android:name': 'android.hardware.nfc.hce', 'android:required': 'false' } });
         }
         androidManifest['uses-feature'] = usesFeatures;
 

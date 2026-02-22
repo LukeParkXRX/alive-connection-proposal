@@ -6,11 +6,12 @@
  */
 
 import { Platform } from 'react-native';
-import * as Location from 'expo-location';
+import { logger } from '@/lib/logger';
 import BLEExchangeService from '../ble/BLEExchangeService';
 import NFCExchangeService from '../nfc/NFCExchangeService';
 import { supabase } from '../supabase';
-import { mapDbUserToProfile } from '../supabase/mappers';
+import { mapDbUserToProfile, createSkeletonProfile } from '../supabase/mappers';
+import LocationService from '../location/LocationService';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { ExchangeEvent, ExchangeMethod, CreateExchangeRequest } from '@/types/ble';
 import type { ProfileCard, LocationData, Connection, UserProfile } from '@/types';
@@ -48,7 +49,7 @@ class ExchangeManager {
    */
   async startExchangeMode(userId: string, profileCard: ProfileCard): Promise<boolean> {
     if (this.isActive) {
-      console.log('[ExchangeManager] Already active');
+      logger.log('[ExchangeManager] Already active');
       return true;
     }
 
@@ -62,10 +63,10 @@ class ExchangeManager {
           this.handleExchangeEvent(event);
         });
         anyStarted = true;
-        console.log('[ExchangeManager] BLE layer started');
+        logger.log('[ExchangeManager] BLE layer started');
       }
     } catch (err) {
-      console.warn('[ExchangeManager] BLE 시작 실패:', err);
+      logger.warn('[ExchangeManager] BLE 시작 실패:', err);
     }
 
     // 2. NFC 리스너 시작 (Boost Layer — 가능한 기기만)
@@ -78,11 +79,11 @@ class ExchangeManager {
             this.handleExchangeEvent(event);
           });
           anyStarted = true;
-          console.log('[ExchangeManager] NFC layer started');
+          logger.log('[ExchangeManager] NFC layer started');
         }
       }
     } catch (err) {
-      console.warn('[ExchangeManager] NFC 시작 실패:', err);
+      logger.warn('[ExchangeManager] NFC 시작 실패:', err);
     }
 
     this.isActive = anyStarted;
@@ -106,7 +107,7 @@ class ExchangeManager {
     }
 
     this.isActive = false;
-    console.log('[ExchangeManager] Exchange mode stopped');
+    logger.log('[ExchangeManager] Exchange mode stopped');
   }
 
   /**
@@ -120,7 +121,7 @@ class ExchangeManager {
       // 2. 내 DB 유저 정보
       const myUser = useAuthStore.getState().dbUser;
       if (!myUser) {
-        console.warn('[ExchangeManager] 로그인된 유저 없음');
+        logger.warn('[ExchangeManager] 로그인된 유저 없음');
         return null;
       }
 
@@ -134,13 +135,13 @@ class ExchangeManager {
           .single();
 
         if (error || !data) {
-          console.warn('[ExchangeManager] 상대방 조회 실패:', error);
-          targetUser = this.createSkeletonProfile(partnerId);
+          logger.warn('[ExchangeManager] 상대방 조회 실패:', error);
+          targetUser = createSkeletonProfile(partnerId);
         } else {
           targetUser = mapDbUserToProfile(data);
         }
       } catch {
-        targetUser = this.createSkeletonProfile(partnerId);
+        targetUser = createSkeletonProfile(partnerId);
       }
 
       // 4. Supabase interactions 테이블에 저장
@@ -165,7 +166,7 @@ class ExchangeManager {
 
       const interactionId = interactionData?.id || `local_${Date.now()}`;
       if (insertError) {
-        console.warn('[ExchangeManager] Interaction 저장 실패:', insertError);
+        logger.warn('[ExchangeManager] Interaction 저장 실패:', insertError);
       }
 
       // 5. Connection 객체 생성
@@ -192,7 +193,7 @@ class ExchangeManager {
 
       return connection;
     } catch (err) {
-      console.error('[ExchangeManager] Exchange accept failed:', err);
+      logger.error('[ExchangeManager] Exchange accept failed:', err);
       this.emit({
         type: 'error',
         partnerId,
@@ -204,57 +205,17 @@ class ExchangeManager {
   }
 
   /**
-   * GPS 위치 캡처
+   * GPS 위치 캡처 — LocationService 싱글톤에 위임
    */
   private async captureLocation(): Promise<LocationData | null> {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') return null;
-
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-
-      return {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        address: address
-          ? `${address.street || ''} ${address.city || ''}`.trim()
-          : undefined,
-        placeName: address?.name || undefined,
-        city: address?.city || undefined,
-        country: address?.country || undefined,
-      };
-    } catch (err) {
-      console.warn('[ExchangeManager] 위치 캡처 실패:', err);
-      return null;
-    }
-  }
-
-  /**
-   * 스켈레톤 프로필 생성 (DB 조회 실패 시)
-   */
-  private createSkeletonProfile(userId: string): UserProfile {
-    const now = new Date().toISOString();
-    return {
-      id: userId,
-      name: `User ${userId.slice(0, 8)}`,
-      socialLinks: {},
-      createdAt: now,
-      updatedAt: now,
-    };
+    return LocationService.getInstance().getCurrentLocation();
   }
 
   /**
    * 교환 이벤트 처리 (BLE/NFC → 통합)
    */
   private handleExchangeEvent(event: ExchangeEvent): void {
-    console.log(`[ExchangeManager] Event: ${event.type} via ${event.method || 'unknown'}`);
+    logger.log(`[ExchangeManager] Event: ${event.type} via ${event.method || 'unknown'}`);
     this.emit(event);
   }
 

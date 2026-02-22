@@ -4,6 +4,7 @@
  */
 
 import { BleManager, Device, State } from 'react-native-ble-plx';
+import { logger } from '@/lib/logger';
 import { ALIVE_BLE_CONFIG } from '@/constants/ble';
 import type { DiscoveredDevice } from '@/types/ble';
 import { Platform } from 'react-native';
@@ -52,7 +53,7 @@ class BLEScanner {
     // 1. Check BLE state
     const state = await this.manager.state();
     if (state !== State.PoweredOn) {
-      console.warn('[BLE Scanner] Bluetooth is not powered on:', state);
+      logger.warn('[BLE Scanner] Bluetooth is not powered on:', state);
       return;
     }
 
@@ -71,7 +72,7 @@ class BLEScanner {
       { allowDuplicates: false },
       (error, device) => {
         if (error) {
-          console.warn('[BLE Scanner] Scan error:', error.message);
+          logger.warn('[BLE Scanner] Scan error:', error.message);
           return;
         }
         if (device) {
@@ -80,13 +81,13 @@ class BLEScanner {
       }
     );
 
-    console.log('[BLE Scanner] Started scanning for ALIVE devices');
+    logger.log('[BLE Scanner] Started scanning for ALIVE devices');
   }
 
   stopScanning(): void {
     this.isActive = false;
     this.manager.stopDeviceScan();
-    console.log('[BLE Scanner] Stopped scanning');
+    logger.log('[BLE Scanner] Stopped scanning');
   }
 
   onDeviceDiscovered(callback: DeviceCallback): () => void {
@@ -131,7 +132,7 @@ class BLEScanner {
       // Notify listeners
       this.listeners.forEach(cb => cb(discovered));
     } catch (err) {
-      console.warn('[BLE Scanner] Failed to read device:', err);
+      logger.warn('[BLE Scanner] Failed to read device:', err);
     }
   }
 
@@ -152,7 +153,7 @@ class BLEScanner {
       const decoded = base64Decode(characteristic.value);
       return decoded || null;
     } catch (err) {
-      console.warn('[BLE Scanner] GATT read failed:', (err as Error).message);
+      logger.warn('[BLE Scanner] GATT read failed:', (err as Error).message);
       return null;
     } finally {
       try {

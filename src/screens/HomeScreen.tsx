@@ -11,7 +11,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,117 +19,35 @@ import * as Haptics from 'expo-haptics';
 import { colors, typography, spacing, borderRadius, shadows } from '@/constants/theme';
 import { useProfileStore } from '@/store/useProfileStore';
 import { useConnectionStore } from '@/store/useConnectionStore';
-import { useGraphStore } from '@/store/useGraphStore';
 import { useNfcHandshake } from '@/hooks/useNfcHandshake';
 import { HandshakeSuccess } from '@/components/HandshakeSuccess';
-import type { NfcHandshakeResult, Connection, UserProfile } from '@/types';
+import type { NfcHandshakeResult } from '@/types';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { supabase } from '@/services/supabase';
-import { mapDbUserToProfile, mapInteractionToDbRow } from '@/services/supabase/mappers';
-import { useAuthStore } from '@/store/useAuthStore';
 
 export const HomeScreen: React.FC = () => {
-  const { profile, activeCard, currentMode, setCurrentMode } = useProfileStore();
-  const { connections, addConnection } = useConnectionStore();
-
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [lastConnection, setLastConnection] = useState<Connection | null>(null);
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const profile = useProfileStore((s) => s.profile);
+  const activeCard = useProfileStore((s) => s.activeCard);
+  const currentMode = useProfileStore((s) => s.currentMode);
+  const setCurrentMode = useProfileStore((s) => s.setCurrentMode);
+  const connections = useConnectionStore((s) => s.connections);
+  // store의 핸드셰이크 완료 상태 — HandshakeSuccess 오버레이 구동에 사용
+  const lastReceivedConnection = useConnectionStore((s) => s.lastReceivedConnection);
+  const clearLastConnection = useConnectionStore((s) => s.clearLastConnection);
+  const handleAutomaticHandshake = useConnectionStore((s) => s.handleAutomaticHandshake);
 
   const { wp, fp, isTablet } = useResponsive();
   const { colors: c, isDark } = useThemeColors();
 
-  // NFC Handler — Supabase에서 실제 프로필 조회 + interaction 저장
+  // NFC 핸드셰이크 완료 시 store 위임 — 중복 로직 없이 userId만 전달
   const handleHandshakeComplete = useCallback(
     async (result: NfcHandshakeResult) => {
       if (result.success && result.receivedProfile) {
-        const targetUserId = result.receivedProfile.userId;
-
-        // 1. Supabase에서 실제 프로필 조회
-        let targetUser: UserProfile;
-        try {
-          const { data, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', targetUserId)
-            .single();
-
-          if (error || !data) {
-            // DB에 없으면 NFC에서 받은 정보로 대체
-            targetUser = {
-              id: targetUserId,
-              name: result.receivedProfile.displayName,
-              title: result.receivedProfile.displayTitle,
-              company: result.receivedProfile.displayCompany,
-              avatarUrl: result.receivedProfile.avatarUrl,
-              socialLinks: result.receivedProfile.visibleLinks,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-          } else {
-            targetUser = mapDbUserToProfile(data);
-          }
-        } catch {
-          targetUser = {
-            id: targetUserId,
-            name: result.receivedProfile.displayName,
-            title: result.receivedProfile.displayTitle,
-            company: result.receivedProfile.displayCompany,
-            avatarUrl: result.receivedProfile.avatarUrl,
-            socialLinks: result.receivedProfile.visibleLinks,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          };
-        }
-
-        const myDbUser = useAuthStore.getState().dbUser;
-        const myUserId = myDbUser?.id || profile?.id || '';
-
-        // 2. Supabase interactions 저장
-        let interactionId = `int_${Date.now()}`;
-        try {
-          const dbRow = mapInteractionToDbRow({
-            sourceUserId: myUserId,
-            targetUserId: targetUser.id,
-            metAt: result.timestamp,
-            location: result.location,
-          });
-          const { data: inserted } = await supabase
-            .from('interactions')
-            .insert(dbRow)
-            .select()
-            .single();
-          if (inserted) interactionId = inserted.id;
-        } catch (insertErr) {
-          console.warn('[Handshake] Interaction 저장 실패:', insertErr);
-        }
-
-        // 3. 로컬 Connection 생성
-        const connection: Connection = {
-          user: targetUser,
-          interaction: {
-            id: interactionId,
-            sourceUserId: myUserId,
-            targetUserId: targetUser.id,
-            metAt: result.timestamp,
-            location: result.location || { latitude: 0, longitude: 0 },
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        };
-
-        addConnection(connection);
-        setLastConnection(connection);
-        setShowSuccess(true);
-
-        // 4. 지식그래프 (기존 패턴 유지)
-        const graphStore = useGraphStore.getState();
-        graphStore.addPersonNode(targetUser, connection.interaction).catch((err) => {
-          console.warn('[Graph] 핸드셰이크 후 그래프 동기화 실패:', err);
-        });
+        await handleAutomaticHandshake(result.receivedProfile.userId);
       }
     },
-    [profile, addConnection]
+    [handleAutomaticHandshake]
   );
 
   const { state: nfcState, performManualHandshake } = useNfcHandshake({
@@ -301,27 +218,27 @@ export const HomeScreen: React.FC = () => {
         </View>
       )}
 
-      {/* Handshake Success Modal */}
-      {showSuccess && lastConnection && (
+      {/* Handshake Success Modal — store의 lastReceivedConnection으로 구동 */}
+      {lastReceivedConnection && (
         <HandshakeSuccess
           profile={{
-            userId: lastConnection.user.id,
+            userId: lastReceivedConnection.user.id,
             mode: currentMode,
-            displayName: lastConnection.user.name,
-            displayTitle: lastConnection.user.title,
-            displayCompany: lastConnection.user.company,
-            avatarUrl: lastConnection.user.avatarUrl,
-            visibleLinks: lastConnection.user.socialLinks,
+            displayName: lastReceivedConnection.user.name,
+            displayTitle: lastReceivedConnection.user.title,
+            displayCompany: lastReceivedConnection.user.company,
+            avatarUrl: lastReceivedConnection.user.avatarUrl,
+            visibleLinks: lastReceivedConnection.user.socialLinks,
           }}
-          location={lastConnection.interaction.location}
-          timestamp={lastConnection.interaction.metAt}
-          onDismiss={() => setShowSuccess(false)}
+          location={lastReceivedConnection.interaction.location}
+          timestamp={lastReceivedConnection.interaction.metAt}
+          onDismiss={clearLastConnection}
           onAddMemo={() => {
-            setShowSuccess(false);
+            clearLastConnection();
             // Navigate to memo recording
           }}
           onViewProfile={() => {
-            setShowSuccess(false);
+            clearLastConnection();
             // Navigate to profile detail
           }}
         />

@@ -27,7 +27,7 @@ export class ApiError extends Error {
 
 // === 공통 fetch 래퍼 (타임아웃 + 에러 핸들링) ===
 
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+export async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
 
@@ -139,6 +139,15 @@ export async function ensureBeingExists(beingId: string): Promise<void> {
     }
     // 서버 연결 실패는 무시 (오프라인 모드)
   }
+}
+
+/**
+ * Being 상태 초기화 — 로그아웃 시 호출
+ * _beingEnsured 플래그를 리셋하고 저장된 Being ID를 삭제
+ */
+export async function resetBeingState(): Promise<void> {
+  _beingEnsured = false;
+  await clearBeingId();
 }
 
 // === Export ===

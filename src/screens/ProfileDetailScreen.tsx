@@ -17,19 +17,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import { colors, typography, spacing, borderRadius, shadows } from '@/constants/theme';
 import { supabase } from '@/services/supabase';
-import type { UserProfile, ConnectionStatus } from '@/types';
+import type { UserProfile, ConnectionStatus, RootStackParamList } from '@/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
+// ProfileDetail 화면의 타입 정의
+type ProfileDetailRouteProp = RouteProp<RootStackParamList, 'ProfileDetail'>;
+type ProfileDetailNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProfileDetail'>;
+
 export const ProfileDetailScreen: React.FC = () => {
-    const route = useRoute<any>();
-    const navigation = useNavigation<any>();
+    const route = useRoute<ProfileDetailRouteProp>();
+    const navigation = useNavigation<ProfileDetailNavigationProp>();
     const { userId } = route.params;
-    const { user: currentUser, dbUser: myDbUser } = useAuthStore();
+    // myDbUser만 사용 — 개별 셀렉터로 구독해 불필요한 리렌더링 방지
+    const myDbUser = useAuthStore((s) => s.dbUser);
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>('none');

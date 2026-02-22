@@ -26,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { useExchangeManager } from '@/hooks/useExchangeManager';
 import { useConnectionStore } from '@/store/useConnectionStore';
 import { useProfileStore } from '@/store/useProfileStore';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import PulseAnimation from '@/components/exchange/PulseAnimation';
 import ExchangeRequestSheet from '@/components/exchange/ExchangeRequestSheet';
 import { HandshakeSuccess } from '@/components/HandshakeSuccess';
@@ -33,21 +34,14 @@ import { BLEState } from '@/constants/ble';
 import type { ExchangeMethod } from '@/types/ble';
 import type { Connection } from '@/types';
 
-// Dark theme colors (XRX Antigravity style)
-const COLORS = {
-  background: '#0F172A',
-  backgroundAlt: '#1E293B',
-  textPrimary: '#F1F5F9',
-  textSecondary: '#94A3B8',
-  textTertiary: '#64748B',
-  accent: '#00D4AA',
-  accentDark: '#00B894',
-  border: '#334155',
-};
-
 export const ExchangeReadyScreen: React.FC = () => {
-  const { activeCard, currentMode } = useProfileStore();
-  const { connections } = useConnectionStore();
+  // 테마 색상 (다크/라이트 모드 자동 전환)
+  const { colors: themeColors } = useThemeColors();
+
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const activeCard = useProfileStore((s) => s.activeCard);
+  const currentMode = useProfileStore((s) => s.currentMode);
+  const connections = useConnectionStore((s) => s.connections);
   const {
     bleState,
     isScanning,
@@ -133,22 +127,46 @@ export const ExchangeReadyScreen: React.FC = () => {
   const recentConnections = connections.slice(0, 5);
   const canScan = bleState !== BLEState.ERROR;
 
+  // 테마 색상 기반 동적 스타일 (StyleSheet.create는 정적이므로 색상 의존 항목만 분리)
+  const dynStyles = {
+    container: { backgroundColor: themeColors.background },
+    greeting: { color: themeColors.textPrimary },
+    subGreeting: { color: themeColors.textSecondary },
+    modeBadge: { backgroundColor: `${themeColors.accent}26` }, // 15% 불투명도
+    modeText: { color: themeColors.accent },
+    statusText: { color: themeColors.textPrimary },
+    hintText: { color: themeColors.textSecondary },
+    toggleButton: { backgroundColor: themeColors.accent },
+    toggleButtonActive: { backgroundColor: themeColors.accentDark },
+    toggleButtonDisabled: { backgroundColor: themeColors.border },
+    // 버튼 텍스트는 항상 다크 배경(#0F172A)에 흰 텍스트로 유지 (브랜드 의도)
+    toggleButtonText: { color: themeColors.background },
+    sectionTitle: { color: themeColors.textSecondary },
+    recentItem: { backgroundColor: themeColors.backgroundAlt },
+    recentAvatar: { backgroundColor: `${themeColors.accent}33` }, // 20% 불투명도
+    recentInitial: { color: themeColors.accent },
+    recentName: { color: themeColors.textPrimary },
+    recentMeta: { color: themeColors.textSecondary },
+  } as const;
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, dynStyles.container]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>ALIVE Exchange</Text>
-          <Text style={styles.subGreeting}>Hybrid Mode (BLE + NFC + HCE)</Text>
+          <Text style={[styles.greeting, dynStyles.greeting]}>ALIVE Exchange</Text>
+          <Text style={[styles.subGreeting, dynStyles.subGreeting]}>
+            Hybrid Mode (BLE + NFC + HCE)
+          </Text>
         </View>
 
-        <View style={styles.modeBadge}>
+        <View style={[styles.modeBadge, dynStyles.modeBadge]}>
           <Ionicons
             name={currentMode === 'business' ? 'briefcase' : 'cafe'}
             size={16}
-            color={COLORS.accent}
+            color={themeColors.accent}
           />
-          <Text style={styles.modeText}>
+          <Text style={[styles.modeText, dynStyles.modeText]}>
             {currentMode === 'business' ? 'Business' : 'Casual'}
           </Text>
         </View>
@@ -156,18 +174,19 @@ export const ExchangeReadyScreen: React.FC = () => {
 
       {/* Main Pulse Area */}
       <View style={styles.pulseContainer}>
-        <PulseAnimation isActive={isScanning} size={180} color={COLORS.accent} />
+        <PulseAnimation isActive={isScanning} size={180} color={themeColors.accent} />
 
-        {/* Status Text */}
-        <Text style={styles.statusText}>{getStatusText()}</Text>
-        <Text style={styles.hintText}>{getHintText()}</Text>
+        {/* 상태 텍스트 */}
+        <Text style={[styles.statusText, dynStyles.statusText]}>{getStatusText()}</Text>
+        <Text style={[styles.hintText, dynStyles.hintText]}>{getHintText()}</Text>
 
-        {/* Toggle Button */}
+        {/* 스캔 토글 버튼 */}
         <Pressable
           style={({ pressed }) => [
             styles.toggleButton,
-            isScanning && styles.toggleButtonActive,
-            !canScan && styles.toggleButtonDisabled,
+            dynStyles.toggleButton,
+            isScanning && dynStyles.toggleButtonActive,
+            !canScan && [dynStyles.toggleButtonDisabled, styles.toggleButtonDisabled],
             pressed && styles.toggleButtonPressed,
           ]}
           onPress={handleToggleScan}
@@ -175,13 +194,13 @@ export const ExchangeReadyScreen: React.FC = () => {
         >
           {isScanning ? (
             <>
-              <ActivityIndicator size="small" color="#0F172A" />
-              <Text style={styles.toggleButtonTextActive}>스캔 중지</Text>
+              <ActivityIndicator size="small" color={themeColors.background} />
+              <Text style={[styles.toggleButtonText, dynStyles.toggleButtonText]}>스캔 중지</Text>
             </>
           ) : (
             <>
-              <Ionicons name="search" size={20} color="#0F172A" />
-              <Text style={styles.toggleButtonText}>교환 시작</Text>
+              <Ionicons name="search" size={20} color={themeColors.background} />
+              <Text style={[styles.toggleButtonText, dynStyles.toggleButtonText]}>교환 시작</Text>
             </>
           )}
         </Pressable>
@@ -190,26 +209,26 @@ export const ExchangeReadyScreen: React.FC = () => {
       {/* Recent Exchanges */}
       {recentConnections.length > 0 && (
         <View style={styles.recentSection}>
-          <Text style={styles.sectionTitle}>최근 교환</Text>
+          <Text style={[styles.sectionTitle, dynStyles.sectionTitle]}>최근 교환</Text>
           <FlatList
             data={recentConnections}
             keyExtractor={(item) => item.interaction.id}
             renderItem={({ item }) => (
-              <View style={styles.recentItem}>
-                <View style={styles.recentAvatar}>
-                  <Text style={styles.recentInitial}>
+              <View style={[styles.recentItem, dynStyles.recentItem]}>
+                <View style={[styles.recentAvatar, dynStyles.recentAvatar]}>
+                  <Text style={[styles.recentInitial, dynStyles.recentInitial]}>
                     {item.user.name.charAt(0).toUpperCase()}
                   </Text>
                 </View>
                 <View style={styles.recentInfo}>
-                  <Text style={styles.recentName} numberOfLines={1}>
+                  <Text style={[styles.recentName, dynStyles.recentName]} numberOfLines={1}>
                     {item.user.name}
                   </Text>
-                  <Text style={styles.recentMeta} numberOfLines={1}>
+                  <Text style={[styles.recentMeta, dynStyles.recentMeta]} numberOfLines={1}>
                     {item.user.company || '회사 정보 없음'}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textTertiary} />
+                <Ionicons name="chevron-forward" size={20} color={themeColors.textTertiary} />
               </View>
             )}
             scrollEnabled={false}
@@ -254,10 +273,10 @@ export const ExchangeReadyScreen: React.FC = () => {
   );
 };
 
+// 레이아웃/정적 값만 StyleSheet에 정의 — 색상은 dynStyles에서 테마 기반으로 처리
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
 
   // Header
@@ -271,11 +290,9 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: '700',
-    color: COLORS.textPrimary,
   },
   subGreeting: {
     fontSize: 13,
-    color: COLORS.textSecondary,
     marginTop: 4,
   },
   modeBadge: {
@@ -284,13 +301,11 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: 'rgba(0, 212, 170, 0.15)',
     borderRadius: 16,
   },
   modeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.accent,
   },
 
   // Pulse Container
@@ -303,13 +318,11 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 20,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginTop: 32,
     marginBottom: 8,
   },
   hintText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 32,
@@ -322,16 +335,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     paddingHorizontal: 24,
-    backgroundColor: COLORS.accent,
     borderRadius: 16,
     minWidth: 180,
     justifyContent: 'center',
   },
-  toggleButtonActive: {
-    backgroundColor: COLORS.accentDark,
-  },
   toggleButtonDisabled: {
-    backgroundColor: COLORS.border,
     opacity: 0.5,
   },
   toggleButtonPressed: {
@@ -340,12 +348,6 @@ const styles = StyleSheet.create({
   toggleButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
-  },
-  toggleButtonTextActive: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
   },
 
   // Recent Section
@@ -356,7 +358,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
@@ -365,7 +366,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.backgroundAlt,
     borderRadius: 12,
     marginBottom: 8,
   },
@@ -373,7 +373,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(0, 212, 170, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -381,7 +380,6 @@ const styles = StyleSheet.create({
   recentInitial: {
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.accent,
   },
   recentInfo: {
     flex: 1,
@@ -389,12 +387,10 @@ const styles = StyleSheet.create({
   recentName: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.textPrimary,
     marginBottom: 2,
   },
   recentMeta: {
     fontSize: 13,
-    color: COLORS.textSecondary,
   },
 });
 

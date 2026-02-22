@@ -4,6 +4,7 @@
  */
 
 import { BleManager, State } from 'react-native-ble-plx';
+import { logger } from '@/lib/logger';
 import { ALIVE_BLE_CONFIG, BLEState } from '@/constants/ble';
 import BLEScanner from './BLEScanner';
 import BLEAdvertiser from './BLEAdvertiser';
@@ -40,7 +41,7 @@ class BLEExchangeService {
       // BLE 상태 체크
       const bleState = await this.manager.state();
       if (bleState !== State.PoweredOn) {
-        console.warn('[BLE Service] Bluetooth not powered on:', bleState);
+        logger.warn('[BLE Service] Bluetooth not powered on:', bleState);
         this.setState(BLEState.ERROR);
         this.emit({ type: 'error', error: `Bluetooth is ${bleState}` });
         return false;
@@ -59,10 +60,10 @@ class BLEExchangeService {
       await this.scanner.startScanning();
       this.setState(BLEState.SCANNING);
 
-      console.log('[BLE Service] Discovery started — scanning + advertising');
+      logger.log('[BLE Service] Discovery started — scanning + advertising');
       return true;
     } catch (err) {
-      console.warn('[BLE Service] Failed to start discovery:', err);
+      logger.warn('[BLE Service] Failed to start discovery:', err);
       this.setState(BLEState.ERROR);
       this.emit({ type: 'error', error: (err as Error).message });
       return false;
@@ -82,7 +83,7 @@ class BLEExchangeService {
     }
 
     this.setState(BLEState.IDLE);
-    console.log('[BLE Service] Discovery stopped');
+    logger.log('[BLE Service] Discovery stopped');
   }
 
   /**
@@ -91,22 +92,34 @@ class BLEExchangeService {
   private handleDeviceDiscovered(device: DiscoveredDevice): void {
     this.setState(BLEState.DISCOVERED);
 
-    const event: ExchangeEvent = {
-      type: device.isVeryClose ? 'request' : 'discovered',
-      partnerId: device.userId,
-      method: 'ble',
-      data: {
-        rssi: device.rssi,
-        localName: device.localName,
-        isVeryClose: device.isVeryClose,
-      },
-    };
-
-    this.emit(event);
-
-    // 자동 교환 트리거 (매우 가까운 경우)
+    // 매우 가까운 경우 교환 요청 이벤트, 그 외 발견 이벤트 발행
     if (device.isVeryClose) {
-      console.log(`[BLE Service] Very close device detected (RSSI: ${device.rssi}) — auto exchange trigger`);
+      this.emit({
+        type: 'request',
+        partnerId: device.userId,
+        method: 'ble',
+        data: {
+          rssi: device.rssi,
+          localName: device.localName,
+          isVeryClose: device.isVeryClose,
+        },
+      });
+    } else {
+      this.emit({
+        type: 'discovered',
+        partnerId: device.userId,
+        method: 'ble',
+        data: {
+          rssi: device.rssi,
+          localName: device.localName,
+          isVeryClose: device.isVeryClose,
+        },
+      });
+    }
+
+    // 매우 가까운 경우 자동 교환 트리거 로그
+    if (device.isVeryClose) {
+      logger.log(`[BLE Service] Very close device detected (RSSI: ${device.rssi}) — auto exchange trigger`);
     }
   }
 
@@ -134,7 +147,7 @@ class BLEExchangeService {
     const prev = this.state;
     this.state = newState;
     if (prev !== newState) {
-      console.log(`[BLE Service] State: ${prev} → ${newState}`);
+      logger.log(`[BLE Service] State: ${prev} → ${newState}`);
     }
   }
 

@@ -12,22 +12,21 @@ import type { ExchangeMethod } from '@/types/ble';
 
 export function useExchangeManager() {
   const exchangeManager = useRef(ExchangeManager.getInstance()).current;
-  const { dbUser } = useAuthStore();
-  const { activeCard } = useProfileStore();
-  const { addConnection } = useConnectionStore();
-  const {
-    bleState,
-    isScanning,
-    currentEvent,
-    isExchanging,
-    lastCompletedExchange,
-    error,
-    handleExchangeEvent,
-    setScanning,
-    setLastCompletedExchange,
-    setError,
-    reset,
-  } = useExchangeStore();
+  // 개별 셀렉터로 구독 → 불필요한 리렌더링 방지
+  const dbUser = useAuthStore((s) => s.dbUser);
+  const activeCard = useProfileStore((s) => s.activeCard);
+  const addConnection = useConnectionStore((s) => s.addConnection);
+  const bleState = useExchangeStore((s) => s.bleState);
+  const isScanning = useExchangeStore((s) => s.isScanning);
+  const currentEvent = useExchangeStore((s) => s.currentEvent);
+  const isExchanging = useExchangeStore((s) => s.isExchanging);
+  const lastCompletedExchange = useExchangeStore((s) => s.lastCompletedExchange);
+  const error = useExchangeStore((s) => s.error);
+  const handleExchangeEvent = useExchangeStore((s) => s.handleExchangeEvent);
+  const setScanning = useExchangeStore((s) => s.setScanning);
+  const setLastCompletedExchange = useExchangeStore((s) => s.setLastCompletedExchange);
+  const setError = useExchangeStore((s) => s.setError);
+  const reset = useExchangeStore((s) => s.reset);
 
   // ExchangeManager 이벤트 구독
   useEffect(() => {

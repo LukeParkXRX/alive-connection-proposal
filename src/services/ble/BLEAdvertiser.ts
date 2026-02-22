@@ -11,6 +11,7 @@
 
 import { Platform } from 'react-native';
 import { ALIVE_BLE_CONFIG } from '@/constants/ble';
+import { logger } from '@/lib/logger';
 
 type AdvertiserState = 'idle' | 'advertising' | 'error';
 
@@ -54,7 +55,7 @@ class BLEAdvertiser {
    */
   async startAdvertising(): Promise<boolean> {
     if (!this.userId) {
-      console.warn('[BLE Advertiser] userId not set');
+      logger.warn('[BLE Advertiser] userId not set');
       return false;
     }
 
@@ -63,14 +64,14 @@ class BLEAdvertiser {
       // Android: BluetoothLeAdvertiser.startAdvertising()
       // iOS: CBPeripheralManager.startAdvertising()
 
-      console.log(`[BLE Advertiser] Advertising started (${Platform.OS}) — userId: ${this.userId.slice(0, 8)}...`);
-      console.log(`[BLE Advertiser] Service UUID: ${ALIVE_BLE_CONFIG.SERVICE_UUID}`);
-      console.log('[BLE Advertiser] NOTE: True BLE Peripheral requires native module — using scan-only mode for MVP');
+      logger.log(`[BLE Advertiser] Advertising started (${Platform.OS}) — userId: ${this.userId.slice(0, 8)}...`);
+      logger.log(`[BLE Advertiser] Service UUID: ${ALIVE_BLE_CONFIG.SERVICE_UUID}`);
+      logger.log('[BLE Advertiser] NOTE: True BLE Peripheral requires native module — using scan-only mode for MVP');
 
       this.state = 'advertising';
       return true;
     } catch (err) {
-      console.warn('[BLE Advertiser] Failed to start:', err);
+      logger.warn('[BLE Advertiser] Failed to start:', err);
       this.state = 'error';
       return false;
     }
@@ -83,9 +84,9 @@ class BLEAdvertiser {
     try {
       // TODO: Stop native advertising
       this.state = 'idle';
-      console.log('[BLE Advertiser] Stopped advertising');
+      logger.log('[BLE Advertiser] Stopped advertising');
     } catch (err) {
-      console.warn('[BLE Advertiser] Failed to stop:', err);
+      logger.warn('[BLE Advertiser] Failed to stop:', err);
     }
   }
 
@@ -102,7 +103,7 @@ class BLEAdvertiser {
   static async isPeripheralSupported(): Promise<boolean> {
     // TODO: Check native capability
     // For now, return false since we don't have native module yet
-    console.log('[BLE Advertiser] Peripheral mode: native module not yet implemented');
+    logger.log('[BLE Advertiser] Peripheral mode: native module not yet implemented');
     return false;
   }
 }

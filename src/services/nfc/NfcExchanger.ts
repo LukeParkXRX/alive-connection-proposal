@@ -15,7 +15,6 @@ import NfcManager, {
   TagEvent,
 } from 'react-native-nfc-manager';
 import * as Haptics from 'expo-haptics';
-import * as Location from 'expo-location';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 
@@ -25,8 +24,10 @@ import type {
   ProfileCard,
   LocationData,
 } from '@/types';
+import LocationService from '@/services/location/LocationService';
 
 import { HCESession, NFCTagType4NDEFContentType, NFCTagType4 } from 'react-native-hce';
+import { logger } from '@/lib/logger';
 
 // Protocol version for forward compatibility
 const NFC_PROTOCOL_VERSION = '1.0.0';
@@ -47,7 +48,7 @@ class NfcExchanger {
       // Check if NFC is supported
       const isSupported = await NfcManager.isSupported();
       if (!isSupported) {
-        console.warn('NFC is not supported on this device');
+        logger.warn('NFC is not supported on this device');
         return false;
       }
 
@@ -60,7 +61,7 @@ class NfcExchanger {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      console.error('Failed to initialize NFC:', error);
+      logger.error('Failed to initialize NFC:', error);
       return false;
     }
   }
@@ -130,7 +131,7 @@ class NfcExchanger {
         );
       }
     } catch (error) {
-      console.error('Failed to start NFC listener:', error);
+      logger.error('Failed to start NFC listener:', error);
       throw error;
     }
   }
@@ -149,7 +150,7 @@ class NfcExchanger {
         await NfcManager.unregisterTagEvent();
       }
     } catch (error) {
-      console.error('Failed to stop NFC listener:', error);
+      logger.error('Failed to stop NFC listener:', error);
     }
   }
 
@@ -266,7 +267,7 @@ class NfcExchanger {
 
       return null;
     } catch (error) {
-      console.error('Failed to read profile from tag:', error);
+      logger.error('Failed to read profile from tag:', error);
       return null;
     }
   }
@@ -288,45 +289,17 @@ class NfcExchanger {
 
       return false;
     } catch (error) {
-      console.error('Failed to write profile to tag:', error);
+      logger.error('Failed to write profile to tag:', error);
       return false;
     }
   }
 
   /**
-   * Capture current GPS location for meeting context
+   * 현재 GPS 위치 획득 — LocationService 싱글톤에 위임
    */
   private async captureLocation(): Promise<LocationData | undefined> {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        return undefined;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      // Reverse geocode for address
-      const [address] = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        address: address
-          ? `${address.street || ''} ${address.city || ''} ${address.country || ''}`.trim()
-          : undefined,
-        placeName: address?.name || undefined,
-        city: address?.city || undefined,
-        country: address?.country || undefined,
-      };
-    } catch (error) {
-      console.error('Failed to capture location:', error);
-      return undefined;
-    }
+    const result = await LocationService.getInstance().getCurrentLocation();
+    return result ?? undefined;
   }
 
   /**
@@ -350,7 +323,7 @@ class NfcExchanger {
    */
   private async loadSuccessSound(): Promise<void> {
     // 사운드 파일이 아직 없으므로 스킵 (추후 추가 시 require 활성화)
-    console.log('[NFC] Success sound skipped (asset not yet added)');
+    logger.log('[NFC] Success sound skipped (asset not yet added)');
   }
 
   /**
@@ -362,17 +335,8 @@ class NfcExchanger {
         await this.successSound.replayAsync();
       }
     } catch (error) {
-      console.log('Could not play success sound');
+      logger.log('Could not play success sound');
     }
-  }
-
-  /**
-   * Get anonymous device identifier (for deduplication, not tracking)
-   */
-  private async getAnonymousDeviceId(): Promise<string> {
-    // Generate a session-based ID, not a persistent device ID
-    // This respects user privacy while preventing duplicate exchanges
-    return `${Platform.OS}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
@@ -396,7 +360,7 @@ class NfcExchanger {
         await this.successSound.unloadAsync();
       }
     } catch (error) {
-      console.error('Cleanup error:', error);
+      logger.error('Cleanup error:', error);
     }
   }
 }
