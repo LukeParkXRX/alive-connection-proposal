@@ -2673,6 +2673,98 @@ section {
     gap: 12px;
   }
 }
+
+/* ============================================
+   Architecture Tooltip (Speech Bubble)
+   ============================================ */
+.arch-comp,
+.arch-data-group {
+  position: relative;
+}
+.arch-tooltip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 300px;
+  max-width: 90vw;
+  padding: 16px 18px;
+  background: rgba(30, 41, 59, 0.97);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--alive-emerald-glow);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 212, 170, 0.12), 0 0 0 1px rgba(0, 212, 170, 0.05);
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text-dim);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 100;
+}
+.arch-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+}
+/* Speech bubble arrow */
+.arch-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--arrow-left, 50%);
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid var(--alive-emerald-glow);
+}
+/* If tooltip would go off-screen left */
+.arch-tooltip.pos-left {
+  left: 0;
+  transform: none;
+}
+.arch-tooltip.pos-left::after {
+  left: 24px;
+  transform: none;
+}
+/* If tooltip would go off-screen right */
+.arch-tooltip.pos-right {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.arch-tooltip.pos-right::after {
+  left: auto;
+  right: 24px;
+  transform: none;
+}
+/* Bottom position (for items near top of viewport) */
+.arch-tooltip.pos-bottom {
+  bottom: auto;
+  top: calc(100% + 14px);
+}
+.arch-tooltip.pos-bottom::after {
+  top: auto;
+  bottom: 100%;
+  border-top: none;
+  border-bottom: 8px solid var(--alive-emerald-glow);
+}
+.arch-tooltip .tooltip-title {
+  font-weight: 700;
+  color: var(--alive-emerald);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  display: block;
+}
+@media (max-width: 768px) {
+  .arch-tooltip {
+    width: 260px;
+    font-size: 0.78rem;
+    padding: 14px 16px;
+  }
+}
 </style>
 </head>
 <body>
@@ -2946,7 +3038,7 @@ section {
               <span class="layer-title-text">&#xC0AC;&#xC6A9;&#xC790; &#xB514;&#xBC14;&#xC774;&#xC2A4;</span>
             </div>
             <div class="arch-layer-body">
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="스마트폰 A는 안드로이드 기기예요. 이 앱을 설치하면 NFC와 블루투스를 이용해서 상대방 폰과 명함을 자동으로 교환할 수 있어요. React Native라는 기술로 만들어져서 하나의 코드로 안드로이드와 iOS 모두 동작해요.">
                 <div class="arch-comp-icon">&#x1F4F1;</div>
                 <div class="arch-comp-name">Phone A (Android)</div>
                 <div class="arch-comp-tech">React Native 0.73 + Expo 50</div>
@@ -2957,7 +3049,7 @@ section {
                   <span class="arch-comp-tag">NFC/HCE</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="스마트폰 B는 아이폰이에요. 아이폰은 NFC 태그 읽기와 블루투스를 지원해요. 안드로이드 폰과 가까이 대면 자동으로 명함이 교환되고, 만남 기록이 저장돼요. 같은 앱인데 운영체제만 달라요.">
                 <div class="arch-comp-icon">&#x1F4F1;</div>
                 <div class="arch-comp-name">Phone B (iOS)</div>
                 <div class="arch-comp-tech">React Native 0.73 + Expo 50</div>
@@ -2967,7 +3059,7 @@ section {
                   <span class="arch-comp-tag">BLE Central</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="웹 브라우저에서 접속하는 대시보드예요. 교환한 명함 목록을 큰 화면에서 관리하고, 내 공개 프로필 링크(ALIVE Link)를 만들어 공유할 수 있어요. React와 Vite라는 최신 웹 기술로 빠르게 동작해요.">
                 <div class="arch-comp-icon">&#x1F310;</div>
                 <div class="arch-comp-name">Web Browser</div>
                 <div class="arch-comp-tech">React 19 + Vite 7</div>
@@ -2993,7 +3085,7 @@ section {
               <span class="layer-title-text">&#xD1B5;&#xC2E0; &#xACC4;&#xCE35;</span>
             </div>
             <div class="arch-layer-body">
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="NFC는 '근거리 무선 통신'이에요. 교통카드 찍듯이 두 폰을 가까이 대면 즉시 데이터가 전송돼요. HCE는 폰 자체가 NFC 카드처럼 동작하는 기술이에요. 별도 조작 없이 탭 한 번으로 명함이 교환돼요.">
                 <div class="arch-comp-icon">&#x1F4F3;</div>
                 <div class="arch-comp-name">NFC / HCE</div>
                 <div class="arch-comp-tech">NDEF URL Broadcast</div>
@@ -3003,7 +3095,7 @@ section {
                   <span class="arch-comp-tag">&#xC989;&#xC2DC; &#xAD50;&#xD658;</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="BLE는 '저전력 블루투스'예요. 에어팟 연결할 때 쓰는 그 블루투스! 약 5미터 이내에 ALIVE 앱 사용자가 있으면 자동으로 감지해요. 신호 세기(RSSI)를 측정해서 가까이 있는 사람만 골라내요.">
                 <div class="arch-comp-icon">&#x1F4E1;</div>
                 <div class="arch-comp-name">BLE Scanner</div>
                 <div class="arch-comp-tech">SERVICE_UUID Scan</div>
@@ -3013,7 +3105,7 @@ section {
                   <span class="arch-comp-tag">~5m &#xBC94;&#xC704;</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="QR 코드는 NFC나 블루투스가 안 될 때 쓰는 대체 수단이에요. 카메라로 상대방의 QR 코드를 찍으면 프로필이 교환돼요. 모든 폰에서 작동하기 때문에 만능 백업 방법이에요.">
                 <div class="arch-comp-icon">&#x1F4F7;</div>
                 <div class="arch-comp-name">QR Code</div>
                 <div class="arch-comp-tech">&#xC571; &#xBBF8;&#xC124;&#xCE58; &#xB300;&#xC751;</div>
@@ -3022,7 +3114,7 @@ section {
                   <span class="arch-comp-tag">Fallback</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="딥링크는 특별한 URL 주소예요. 이 링크를 카톡이나 문자로 보내면 상대방이 클릭했을 때 바로 앱이 열리면서 내 프로필을 볼 수 있어요. 앱이 없으면 웹 페이지로 연결돼요.">
                 <div class="arch-comp-icon">&#x1F517;</div>
                 <div class="arch-comp-name">Deep Link / HTTPS</div>
                 <div class="arch-comp-tech">alive.link/{userId}</div>
@@ -3046,7 +3138,7 @@ section {
               <span class="layer-title-text">&#xC571; &#xACC4;&#xCE35;</span>
             </div>
             <div class="arch-layer-body">
-              <div class="arch-comp" style="flex: 2; max-width: 380px; border-color: rgba(0, 180, 216, 0.3);">
+              <div class="arch-comp" style="flex: 2; max-width: 380px; border-color: rgba(0, 180, 216, 0.3);" data-tooltip="교환 매니저는 이 앱의 두뇌 같은 존재예요. NFC, 블루투스, QR 코드 중 어떤 방법으로 상대방을 만났든 하나의 흐름으로 통합해서 처리해요. 실패하면 자동으로 다른 방법을 시도하는 똑똑한 관리자예요.">
                 <div class="arch-comp-icon">&#x2699;&#xFE0F;</div>
                 <div class="arch-comp-name">ExchangeManager (&#xD1B5;&#xD569; &#xC870;&#xC728;&#xAE30;)</div>
                 <div class="arch-comp-tech">startListening() &rarr; handleEvent() &rarr; acceptExchange()</div>
@@ -3056,17 +3148,17 @@ section {
                   <span class="arch-comp-tag">&#xC790;&#xB3D9; &#xD3F4;&#xBC31;</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="교환 스토어는 '현재 교환 중' 상태를 임시로 기억하는 저장소예요. 지금 블루투스 스캔 중인지, 상대방을 발견했는지, 교환이 완료됐는지 등의 실시간 상태를 관리해요. 앱 화면이 이걸 보고 UI를 업데이트해요.">
                 <div class="arch-comp-icon">&#x1F4E6;</div>
                 <div class="arch-comp-name">Exchange Store</div>
                 <div class="arch-comp-tech">useExchangeStore</div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="프로필 스토어는 '나의 명함' 정보를 관리하는 저장소예요. 이름, 회사, 직함, 연락처 등 내 프로필 카드 데이터를 보관하고, 비즈니스 모드/캐주얼 모드를 전환할 수 있어요.">
                 <div class="arch-comp-icon">&#x1F464;</div>
                 <div class="arch-comp-name">Profile Store</div>
                 <div class="arch-comp-tech">useProfileStore</div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="위치 서비스는 명함을 교환할 때 '어디서 만났는지'를 자동으로 기록해요. GPS로 위도·경도를 잡고, 역지오코딩으로 '서울시 강남구 삼성동' 같은 주소로 변환해줘요.">
                 <div class="arch-comp-icon">&#x1F4CD;</div>
                 <div class="arch-comp-name">Location Service</div>
                 <div class="arch-comp-tech">GPS + &#xC5ED;&#xC9C0;&#xC624;&#xCF54;&#xB529;</div>
@@ -3086,7 +3178,7 @@ section {
               <span class="layer-title-text">API &#xC11C;&#xBC84; &#xACC4;&#xCE35;</span>
             </div>
             <div class="arch-layer-body">
-              <div class="arch-comp" style="flex: 2; max-width: 440px;">
+              <div class="arch-comp" style="flex: 2; max-width: 440px;" data-tooltip="API 서버는 앱과 데이터베이스 사이의 중간 다리 역할이에요. 앱에서 '이 사람 프로필 줘' 하면 서버가 DB에서 찾아서 전달해요. JWT는 '신분증' 같은 것으로, 본인 확인을 해서 해킹을 막아요.">
                 <div class="arch-comp-icon">&#x1F5A5;&#xFE0F;</div>
                 <div class="arch-comp-name">Express.js + JWT Auth</div>
                 <div class="arch-comp-tech">REST API &middot; AWS / Fly.io</div>
@@ -3114,7 +3206,7 @@ section {
             <div class="arch-layer-body">
               <div class="arch-data-split">
                 <!-- Supabase -->
-                <div class="arch-data-group">
+                <div class="arch-data-group" data-tooltip="수파베이스는 이 앱의 주 데이터베이스예요. 사용자 정보(users)와 만남 기록(interactions)을 안전하게 저장해요. PostgreSQL이라는 강력한 DB 엔진을 쓰고, 로그인·파일 저장 기능도 제공해요.">
                   <div class="arch-data-group-title" style="color: var(--alive-emerald);">
                     &#x1F5C4;&#xFE0F; Supabase
                   </div>
@@ -3128,7 +3220,7 @@ section {
                   </div>
                 </div>
                 <!-- ALIVE Engine -->
-                <div class="arch-data-group">
+                <div class="arch-data-group" data-tooltip="ALIVE 엔진은 사람 관계를 '그래프'로 그려주는 AI 두뇌예요. 'A가 B를 알고, B가 C 회사에 다닌다'는 식으로 관계를 연결해요. Neo4j라는 그래프 DB를 써서 복잡한 인맥도 한눈에 파악할 수 있어요.">
                   <div class="arch-data-group-title" style="color: #F59E0B;">
                     &#x1F9E0; ALIVE Engine
                   </div>
@@ -3157,7 +3249,7 @@ section {
               <span class="layer-title-text">&#xC778;&#xD154;&#xB9AC;&#xC804;&#xC2A4; &#xACC4;&#xCE35;</span>
             </div>
             <div class="arch-layer-body">
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="오프라인 큐는 인터넷이 끊겨도 동작하게 해주는 장치예요. 지하철이나 비행기 안에서 명함을 교환해도 일단 폰에 저장해뒀다가, 인터넷이 되면 자동으로 서버에 보내줘요.">
                 <div class="arch-comp-icon">&#x1F4E5;</div>
                 <div class="arch-comp-name">Offline Queue</div>
                 <div class="arch-comp-tech">AsyncStorage &#xAE30;&#xBC18; &#xD050;</div>
@@ -3166,7 +3258,7 @@ section {
                   <span class="arch-comp-tag">&#xC790;&#xB3D9; &#xB3D9;&#xAE30;&#xD654;</span>
                 </div>
               </div>
-              <div class="arch-comp">
+              <div class="arch-comp" data-tooltip="온톨로지허브는 '세상의 지식을 어떻게 분류할 것인가'를 정의하는 곳이에요. 사람, 회사, 기술, 관심사 같은 21가지 카테고리와 37가지 관계 유형을 미리 설계해놓았어요. AI의 뼈대 같은 역할이에요.">
                 <div class="arch-comp-icon">&#x1F52E;</div>
                 <div class="arch-comp-name">OntologyHub.ai</div>
                 <div class="arch-comp-tech">&#xC628;&#xD1A8;&#xB85C;&#xC9C0; &#xC815;&#xC758; + AI &#xCD94;&#xB860;</div>
@@ -4424,6 +4516,104 @@ section {
     resize();
     initParticles();
   });
+})();
+
+/* ============================================
+   Architecture Tooltip System
+   ============================================ */
+(function() {
+  var hoverTimer = null;
+  var activeTooltip = null;
+
+  // Create tooltip element
+  var tooltip = document.createElement('div');
+  tooltip.className = 'arch-tooltip';
+  tooltip.innerHTML = '<span class="tooltip-title"></span><span class="tooltip-text"></span>';
+  document.body.appendChild(tooltip);
+
+  function showTooltip(comp) {
+    var text = comp.getAttribute('data-tooltip');
+    var title = comp.getAttribute('data-tooltip-title') || '';
+    if (!text) return;
+
+    tooltip.querySelector('.tooltip-title').textContent = title;
+    tooltip.querySelector('.tooltip-text').textContent = text;
+
+    // Position tooltip above the component
+    var rect = comp.getBoundingClientRect();
+    var tooltipW = 300;
+    var scrollY = window.scrollY || window.pageYOffset;
+
+    // Default: centered above
+    var left = rect.left + rect.width / 2 - tooltipW / 2;
+    var top = rect.top + scrollY - 14;
+
+    // Clamp to viewport
+    if (left < 8) left = 8;
+    if (left + tooltipW > window.innerWidth - 8) left = window.innerWidth - tooltipW - 8;
+
+    // If not enough room above, show below
+    if (rect.top < 340) {
+      top = rect.bottom + scrollY + 14;
+      tooltip.classList.add('pos-bottom');
+    } else {
+      tooltip.classList.remove('pos-bottom');
+    }
+
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    tooltip.style.transform = 'none';
+    tooltip.style.width = tooltipW + 'px';
+
+    // Arrow position
+    var arrowLeft = rect.left + rect.width / 2 - left;
+    arrowLeft = Math.max(16, Math.min(arrowLeft, tooltipW - 16));
+    tooltip.style.setProperty('--arrow-left', arrowLeft + 'px');
+
+    tooltip.classList.add('visible');
+    activeTooltip = comp;
+  }
+
+  function hideTooltip() {
+    clearTimeout(hoverTimer);
+    tooltip.classList.remove('visible');
+    activeTooltip = null;
+  }
+
+  // Event delegation for all elements with data-tooltip
+  document.addEventListener('mouseover', function(e) {
+    var comp = e.target.closest('[data-tooltip]');
+    if (!comp) return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(function() {
+      showTooltip(comp);
+    }, 1500);
+  });
+
+  document.addEventListener('mouseout', function(e) {
+    var comp = e.target.closest('[data-tooltip]');
+    if (comp) hideTooltip();
+  });
+
+  // Mobile: tap to show, tap elsewhere to hide
+  document.addEventListener('touchstart', function(e) {
+    var comp = e.target.closest('[data-tooltip]');
+    if (comp) {
+      e.preventDefault();
+      if (activeTooltip === comp) {
+        hideTooltip();
+      } else {
+        hideTooltip();
+        showTooltip(comp);
+      }
+    } else {
+      hideTooltip();
+    }
+  }, { passive: false });
+
+  // Hide on scroll
+  window.addEventListener('scroll', hideTooltip, { passive: true });
 })();
 </script>
 
