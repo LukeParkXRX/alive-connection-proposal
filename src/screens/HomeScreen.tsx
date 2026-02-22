@@ -26,6 +26,9 @@ import { HandshakeSuccess } from '@/components/HandshakeSuccess';
 import type { NfcHandshakeResult, Connection, UserProfile } from '@/types';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { supabase } from '@/services/supabase';
+import { mapDbUserToProfile, mapInteractionToDbRow } from '@/services/supabase/mappers';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export const HomeScreen: React.FC = () => {
   const { profile, activeCard, currentMode, setCurrentMode } = useProfileStore();
@@ -37,33 +40,80 @@ export const HomeScreen: React.FC = () => {
   const { wp, fp, isTablet } = useResponsive();
   const { colors: c, isDark } = useThemeColors();
 
-  // NFC Handler
+  // NFC Handler — Supabase에서 실제 프로필 조회 + interaction 저장
   const handleHandshakeComplete = useCallback(
-    (result: NfcHandshakeResult) => {
+    async (result: NfcHandshakeResult) => {
       if (result.success && result.receivedProfile) {
-        // Create a mock user from the received profile
-        const mockUser: UserProfile = {
-          id: result.receivedProfile.userId,
-          name: result.receivedProfile.displayName,
-          title: result.receivedProfile.displayTitle,
-          company: result.receivedProfile.displayCompany,
-          avatarUrl: result.receivedProfile.avatarUrl,
-          socialLinks: result.receivedProfile.visibleLinks,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
+        const targetUserId = result.receivedProfile.userId;
 
-        const connection: Connection = {
-          user: mockUser,
-          interaction: {
-            id: `int_${Date.now()}`,
-            sourceUserId: profile?.id || '',
-            targetUserId: mockUser.id,
+        // 1. Supabase에서 실제 프로필 조회
+        let targetUser: UserProfile;
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', targetUserId)
+            .single();
+
+          if (error || !data) {
+            // DB에 없으면 NFC에서 받은 정보로 대체
+            targetUser = {
+              id: targetUserId,
+              name: result.receivedProfile.displayName,
+              title: result.receivedProfile.displayTitle,
+              company: result.receivedProfile.displayCompany,
+              avatarUrl: result.receivedProfile.avatarUrl,
+              socialLinks: result.receivedProfile.visibleLinks,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+          } else {
+            targetUser = mapDbUserToProfile(data);
+          }
+        } catch {
+          targetUser = {
+            id: targetUserId,
+            name: result.receivedProfile.displayName,
+            title: result.receivedProfile.displayTitle,
+            company: result.receivedProfile.displayCompany,
+            avatarUrl: result.receivedProfile.avatarUrl,
+            socialLinks: result.receivedProfile.visibleLinks,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
+        }
+
+        const myDbUser = useAuthStore.getState().dbUser;
+        const myUserId = myDbUser?.id || profile?.id || '';
+
+        // 2. Supabase interactions 저장
+        let interactionId = `int_${Date.now()}`;
+        try {
+          const dbRow = mapInteractionToDbRow({
+            sourceUserId: myUserId,
+            targetUserId: targetUser.id,
             metAt: result.timestamp,
-            location: result.location || {
-              latitude: 0,
-              longitude: 0,
-            },
+            location: result.location,
+          });
+          const { data: inserted } = await supabase
+            .from('interactions')
+            .insert(dbRow)
+            .select()
+            .single();
+          if (inserted) interactionId = inserted.id;
+        } catch (insertErr) {
+          console.warn('[Handshake] Interaction 저장 실패:', insertErr);
+        }
+
+        // 3. 로컬 Connection 생성
+        const connection: Connection = {
+          user: targetUser,
+          interaction: {
+            id: interactionId,
+            sourceUserId: myUserId,
+            targetUserId: targetUser.id,
+            metAt: result.timestamp,
+            location: result.location || { latitude: 0, longitude: 0 },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           },
@@ -73,9 +123,9 @@ export const HomeScreen: React.FC = () => {
         setLastConnection(connection);
         setShowSuccess(true);
 
-        // 지식그래프에 노드 자동 생성 (비동기, 실패해도 핸드셰이크에 영향 없음)
+        // 4. 지식그래프 (기존 패턴 유지)
         const graphStore = useGraphStore.getState();
-        graphStore.addPersonNode(mockUser, connection.interaction).catch((err) => {
+        graphStore.addPersonNode(targetUser, connection.interaction).catch((err) => {
           console.warn('[Graph] 핸드셰이크 후 그래프 동기화 실패:', err);
         });
       }

@@ -26,6 +26,8 @@ import type {
   LocationData,
 } from '@/types';
 
+import { HCESession, NFCTagType4NDEFContentType, NFCTagType4 } from 'react-native-hce';
+
 // Protocol version for forward compatibility
 const NFC_PROTOCOL_VERSION = '1.0.0';
 const ALIVE_NFC_RECORD_TYPE = 'alive.connection/v1';
@@ -35,6 +37,7 @@ class NfcExchanger {
   private isInitialized = false;
   private successSound: Audio.Sound | null = null;
   private currentProfileCard: ProfileCard | null = null;
+  private hceSession: any = null;
 
   /**
    * Initialize NFC Manager and preload assets
@@ -96,17 +99,36 @@ class NfcExchanger {
     }
 
     try {
-      // Register for tag discovery
-      await (NfcManager as any).registerTagEvent(
-        async (tag: TagEvent) => {
-          const result = await this.handleTagDiscovered(tag);
-          onHandshakeComplete(result);
-        },
-        'Hold your phone near another ALIVE user',
-        {
-          alertMessage: 'Ready to connect',
-        }
-      );
+      // Set the message that this phone will broadcast when touched
+      if (Platform.OS === 'android') {
+        const url = `${ALIVE_BASE_URL}/${this.currentProfileCard.userId}`;
+        const tag = new NFCTagType4({
+          type: NFCTagType4NDEFContentType.URL,
+          content: url,
+          writable: false
+        });
+
+        this.hceSession = await HCESession.getInstance();
+        await this.hceSession.setApplication(tag);
+        await this.hceSession.setEnabled(true);
+
+        // NOTE: For Android, we RELY ON DEEP LINKS (OS-LEVEL Intents) for reading.
+        // If we enable registerTagEvent here, the Reader mode collides with HCE mode
+        // causing a rapid connect/disconnect crash loop.
+        // The OS will naturally read the other phone's URL and fire 'onOpenUrl'.
+      } else {
+        // Register for tag discovery (iOS and others)
+        await (NfcManager as any).registerTagEvent(
+          async (tag: TagEvent) => {
+            const result = await this.handleTagDiscovered(tag);
+            onHandshakeComplete(result);
+          },
+          'Hold your phone near another ALIVE user',
+          {
+            alertMessage: 'Ready to connect',
+          }
+        );
+      }
     } catch (error) {
       console.error('Failed to start NFC listener:', error);
       throw error;
@@ -118,7 +140,14 @@ class NfcExchanger {
    */
   async stopHandshakeListener(): Promise<void> {
     try {
-      await NfcManager.unregisterTagEvent();
+      if (Platform.OS === 'android') {
+        if (this.hceSession) {
+          await this.hceSession.setEnabled(false);
+          this.hceSession = null;
+        }
+      } else {
+        await NfcManager.unregisterTagEvent();
+      }
     } catch (error) {
       console.error('Failed to stop NFC listener:', error);
     }
@@ -320,19 +349,8 @@ class NfcExchanger {
    * Load the success sound asset
    */
   private async loadSuccessSound(): Promise<void> {
-    try {
-      // In production, use a custom "띠링!" sound
-      // For now, we'll use a placeholder
-      const { sound } = await Audio.Sound.createAsync(
-        // Replace with actual sound asset
-        require('../../../assets/sounds/connection-success.mp3'),
-        { shouldPlay: false }
-      );
-      this.successSound = sound;
-    } catch (error) {
-      // Sound asset might not exist yet
-      console.log('Success sound not loaded (asset may not exist)');
-    }
+    // 사운드 파일이 아직 없으므로 스킵 (추후 추가 시 require 활성화)
+    console.log('[NFC] Success sound skipped (asset not yet added)');
   }
 
   /**

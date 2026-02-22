@@ -139,6 +139,7 @@ export type RootStackParamList = {
 };
 
 export type MainTabParamList = {
+  Exchange: undefined;
   Home: undefined;
   Timeline: undefined;
   Profile: undefined;

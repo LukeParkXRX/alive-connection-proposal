@@ -41,19 +41,6 @@
       ],
       "intentFilters": [
         {
-          "action": "android.nfc.action.NDEF_DISCOVERED",
-          "data": [
-            {
-              "scheme": "https",
-              "host": "alive-connection.app",
-              "pathPrefix": "/connect"
-            }
-          ],
-          "category": [
-            "android.intent.category.DEFAULT"
-          ]
-        },
-        {
           "action": "VIEW",
           "data": [
             {
@@ -75,12 +62,16 @@
         {
           "locationWhenInUsePermission": "We use your location to remember where you met your connections."
         }
-      ]
+      ],
+      "expo-font",
+      "./withHCE",
+      "react-native-ble-plx"
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "13e28bd1-a47e-4de6-b47e-6fdf68d9773e"
       }
-    }
+    },
+    "owner": "lukeparkxrx"
   }
 }

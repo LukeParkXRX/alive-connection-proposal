@@ -7,7 +7,7 @@
 
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, AppState, View, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -21,6 +21,7 @@ import { useGraphStore } from './src/store/useGraphStore';
 import { HandshakeSuccess } from './src/components/HandshakeSuccess';
 import { ProfileCard } from './src/types';
 import { supabase } from '@/services/supabase';
+import { useProfileStore } from './src/store/useProfileStore';
 
 export default function App() {
   const { handleAutomaticHandshake, lastReceivedConnection, clearLastConnection } = useConnectionStore();
@@ -29,14 +30,39 @@ export default function App() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    // 1. Initialize Auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // 1. Initialize Auth + DB User + Profile + Connections
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setLoading(false);
+
+      // Auth 성공 시 DB 유저 프로필 로드 → ProfileStore 초기화 → 타임라인 로드
+      if (session) {
+        const dbUser = await useAuthStore.getState().fetchDbUser();
+        if (dbUser) {
+          useProfileStore.getState().initializeFromAuth();
+          useConnectionStore.getState().loadConnectionsFromSupabase();
+        }
+      }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      if (session) {
+        const dbUser = await useAuthStore.getState().fetchDbUser();
+        if (dbUser) {
+          useProfileStore.getState().initializeFromAuth();
+          useConnectionStore.getState().loadConnectionsFromSupabase();
+        }
+      }
+    });
+
+    // AppState listener for Supabase token refresh
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+      }
     });
 
     // 2. Initialize NFC on app start
@@ -78,6 +104,7 @@ export default function App() {
       nfcExchanger.cleanup();
       linkingSubscription.remove();
       subscription.unsubscribe();
+      appStateSubscription.remove();
     };
   }, [handleAutomaticHandshake, setSession, setLoading]);
 
@@ -112,6 +139,11 @@ export default function App() {
             }}
           />
         )}
+
+        {/* Temporary Build Version Indicator */}
+        <View style={{ position: 'absolute', bottom: 10, right: 10, opacity: 0.3, pointerEvents: 'none' }} pointerEvents="none">
+          <Text style={{ fontSize: 10, fontWeight: 'bold' }}>Build: Hybrid-v1</Text>
+        </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

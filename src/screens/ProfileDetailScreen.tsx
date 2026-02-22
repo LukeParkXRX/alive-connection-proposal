@@ -29,7 +29,7 @@ export const ProfileDetailScreen: React.FC = () => {
     const route = useRoute<any>();
     const navigation = useNavigation<any>();
     const { userId } = route.params;
-    const { user: currentUser } = useAuthStore();
+    const { user: currentUser, dbUser: myDbUser } = useAuthStore();
 
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [status, setStatus] = useState<ConnectionStatus>('none');
@@ -71,15 +71,18 @@ export const ProfileDetailScreen: React.FC = () => {
 
             setProfile(transformedProfile);
 
-            // 2. Check Connection Status
-            const { data: connData } = await supabase
-                .from('connections')
-                .select('status')
-                .or(`and(requester_id.eq.${currentUser?.id},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${currentUser?.id})`)
-                .single();
+            // 2. Check Connection Status (public.users.id 사용)
+            const myId = myDbUser?.id;
+            if (myId) {
+              const { data: connData } = await supabase
+                  .from('connections')
+                  .select('status')
+                  .or(`and(requester_id.eq.${myId},receiver_id.eq.${userId}),and(requester_id.eq.${userId},receiver_id.eq.${myId})`)
+                  .single();
 
-            if (connData) {
-                setStatus(connData.status as ConnectionStatus);
+              if (connData) {
+                  setStatus(connData.status as ConnectionStatus);
+              }
             }
         } catch (error) {
             console.error('Fetch profile error:', error);
@@ -89,9 +92,10 @@ export const ProfileDetailScreen: React.FC = () => {
     };
 
     const logView = async () => {
-        if (currentUser?.id === userId) return;
+        const myId = useAuthStore.getState().dbUser?.id;
+        if (!myId || myId === userId) return;
         await supabase.from('profile_views').insert({
-            viewer_id: currentUser?.id,
+            viewer_id: myId,
             viewed_id: userId,
         });
     };
@@ -101,8 +105,10 @@ export const ProfileDetailScreen: React.FC = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
+            const myId = useAuthStore.getState().dbUser?.id;
+            if (!myId) throw new Error('로그인 필요');
             const { error } = await supabase.from('connections').insert({
-                requester_id: currentUser?.id,
+                requester_id: myId,
                 receiver_id: userId,
                 status: 'pending'
             });

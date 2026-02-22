@@ -92,7 +92,44 @@ export default function App() {
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
     });
+  };
+
+  const handleEmailLogin = async (email: string, password: string) => {
+    console.log("ALIVE Dashboard: Email login attempt", email);
+    try {
+      // 먼저 로그인 시도
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        // 로그인 실패 시 자동 회원가입
+        console.log("ALIVE Dashboard: Login failed, attempting signup", signInError.message);
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (signUpError) {
+          console.error("ALIVE Dashboard: Signup failed", signUpError);
+          alert(`Login/Signup failed: ${signUpError.message}`);
+          return;
+        }
+
+        console.log("ALIVE Dashboard: Signup successful", signUpData);
+        alert('Account created! Please check your email to confirm your account.');
+      } else {
+        console.log("ALIVE Dashboard: Login successful", signInData);
+      }
+    } catch (err: any) {
+      console.error("ALIVE Dashboard: Email auth error", err);
+      alert(`Authentication error: ${err.message}`);
+    }
   };
 
   const handleGuestLogin = () => {
@@ -145,7 +182,7 @@ export default function App() {
 
   if (error) return <ErrorScreen error={error} onRetry={() => window.location.reload()} />;
 
-  if (!session) return <LoginScreen onLogin={handleLogin} onGuestLogin={handleGuestLogin} />;
+  if (!session) return <LoginScreen onLogin={handleLogin} onEmailLogin={handleEmailLogin} onGuestLogin={handleGuestLogin} />;
 
   /* ---- 인증된 레이아웃 ---- */
   return (

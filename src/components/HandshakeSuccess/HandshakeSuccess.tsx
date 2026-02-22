@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Pressable,
   Animated,
+  Dimensions,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: SCREEN_WIDTH - spacing['2xl'] * 2,
+    width: Dimensions.get('window').width - spacing['2xl'] * 2,
     maxWidth: 360,
     backgroundColor: colors.background,
     borderRadius: borderRadius['2xl'],

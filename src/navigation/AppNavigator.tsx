@@ -8,7 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, typography } from '@/constants/theme';
-import { HomeScreen, TimelineScreen, ProfileScreen, LoginScreen, ProfileDetailScreen, ChatScreen } from '@/screens';
+import { HomeScreen, TimelineScreen, ProfileScreen, LoginScreen, ProfileDetailScreen, ChatScreen, ExchangeReadyScreen } from '@/screens';
 import type { RootStackParamList, MainTabParamList } from '@/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -40,6 +40,16 @@ const MainTabs: React.FC = () => {
         },
       }}
     >
+      <Tab.Screen
+        name="Exchange"
+        component={ExchangeReadyScreen}
+        options={{
+          tabBarLabel: 'Exchange',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wifi-outline" size={size} color={color} />
+          ),
+        }}
+      />
       <Tab.Screen
         name="Home"
         component={HomeScreen}
