@@ -89,12 +89,11 @@ export default function App() {
       const { path } = Linking.parse(event.url);
 
       // Handle https://alive-connection.app/connect/[userId]
-      if (path?.startsWith('connect/')) {
-        const userId = path.split('/')[1];
-        if (userId) {
-          // getState()로 최신 액션 참조 — deps 불필요
-          useConnectionStore.getState().handleAutomaticHandshake(userId);
-        }
+      // Use regex to robustly extract the userId regardless of leading slashes
+      const match = event.url.match(/\/connect\/([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        const userId = match[1];
+        useConnectionStore.getState().handleAutomaticHandshake(userId);
       }
     };
 
@@ -118,43 +117,43 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <AppNavigator />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+          <AppNavigator />
 
-        {/* Global Handshake Success Overlay */}
-        {lastReceivedConnection && (
-          <HandshakeSuccess
-            profile={{
-              userId: lastReceivedConnection.user.id,
-              displayName: lastReceivedConnection.user.name,
-              displayTitle: lastReceivedConnection.user.title,
-              displayCompany: lastReceivedConnection.user.company,
-              avatarUrl: lastReceivedConnection.user.avatarUrl,
-              mode: 'business',
-              visibleLinks: lastReceivedConnection.user.socialLinks,
-            }}
-            location={lastReceivedConnection.interaction.location}
-            timestamp={lastReceivedConnection.interaction.metAt}
-            onDismiss={clearLastConnection}
-            onAddMemo={() => {
-              clearLastConnection();
-              // Future: Navigation to memo screen
-            }}
-            onViewProfile={() => {
-              clearLastConnection();
-              // Future: Navigation to profile detail
-            }}
-          />
-        )}
+          {/* Global Handshake Success Overlay */}
+          {lastReceivedConnection && (
+            <HandshakeSuccess
+              profile={{
+                userId: lastReceivedConnection.user.id,
+                displayName: lastReceivedConnection.user.name,
+                displayTitle: lastReceivedConnection.user.title,
+                displayCompany: lastReceivedConnection.user.company,
+                avatarUrl: lastReceivedConnection.user.avatarUrl,
+                mode: 'business',
+                visibleLinks: lastReceivedConnection.user.socialLinks,
+              }}
+              location={lastReceivedConnection.interaction.location}
+              timestamp={lastReceivedConnection.interaction.metAt}
+              onDismiss={clearLastConnection}
+              onAddMemo={() => {
+                clearLastConnection();
+                // Future: Navigation to memo screen
+              }}
+              onViewProfile={() => {
+                clearLastConnection();
+                // Future: Navigation to profile detail
+              }}
+            />
+          )}
 
-        {/* Temporary Build Version Indicator */}
-        <View style={{ position: 'absolute', bottom: 10, right: 10, opacity: 0.3, pointerEvents: 'none' }} pointerEvents="none">
-          <Text style={{ fontSize: 10, fontWeight: 'bold' }}>Build: Hybrid-v1</Text>
-        </View>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+          {/* Temporary Build Version Indicator */}
+          <View style={{ position: 'absolute', bottom: 10, right: 10, opacity: 0.3, pointerEvents: 'none' }} pointerEvents="none">
+            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>Build: Hybrid-v1</Text>
+          </View>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }

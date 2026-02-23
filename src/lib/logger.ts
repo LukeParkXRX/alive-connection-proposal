@@ -12,8 +12,8 @@ export const logger = {
   warn: (...args: unknown[]) => {
     if (__DEV__) console.warn('[ALIVE]', ...args);
   },
-  // 에러는 프로덕션에서도 항상 출력
+  // 에러는 프로덕션에서도 항상 출력, 단 앱 다운을 방지하기 위해 warn 사용
   error: (...args: unknown[]) => {
-    console.error('[ALIVE]', ...args);
+    console.warn('[ALIVE_ERROR]', ...args);
   },
 };

@@ -48,3 +48,6 @@ coverage/
 # Claude Code / OMC
 .claude/
 .omc/
+*.apk
+test_linking.js
+crash.log

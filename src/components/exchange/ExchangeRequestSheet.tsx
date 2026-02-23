@@ -15,8 +15,6 @@ import {
 } from 'react-native';
 import type { ExchangeEvent, ExchangeMethod } from '@/types/ble';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 interface ExchangeRequestSheetProps {
   visible: boolean;
   event: ExchangeEvent | null;

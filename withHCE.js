@@ -30,7 +30,7 @@ function withHceManifest(config) {
                 $: {
                     'android:name': 'com.reactnativehce.services.CardService',
                     'android:exported': 'true',
-                    'android:enabled': 'false',
+                    'android:enabled': 'true',
                     'android:permission': 'android.permission.BIND_NFC_SERVICE'
                 },
                 'intent-filter': [{

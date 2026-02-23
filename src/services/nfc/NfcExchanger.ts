@@ -52,9 +52,30 @@ class NfcExchanger {
         return false;
       }
 
-      // Start NFC Manager
-      await NfcManager.start();
-
+      // Start NFC Manager (with retry on Android to ensure Activity is ready)
+      if (Platform.OS === 'android') {
+        let started = false;
+        let retries = 0;
+        while (!started && retries < 10) {
+          try {
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              await new Promise(resolve => setTimeout(resolve, 200)); // Initial short delay
+            }
+            await NfcManager.start();
+            started = true;
+          } catch (e: any) {
+            retries++;
+            logger.warn(`NFC start failed: ${e?.message || 'unknown error'}, retrying... (${retries}/10)`);
+            if (retries >= 10) {
+              throw e;
+            }
+          }
+        }
+      } else {
+        await NfcManager.start();
+      }
       // Preload success sound
       await this.loadSuccessSound();
 

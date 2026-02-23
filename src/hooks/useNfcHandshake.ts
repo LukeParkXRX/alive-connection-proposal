@@ -113,7 +113,7 @@ export function useNfcHandshake({
       await nfcExchanger.startHandshakeListener(handleHandshakeComplete);
       setState((prev) => ({ ...prev, isScanning: true }));
     } catch (error) {
-      console.error('Failed to start NFC listener:', error);
+      console.warn('Failed to start NFC listener:', error);
     }
   }, [profileCard, handleHandshakeComplete]);
 
@@ -123,7 +123,7 @@ export function useNfcHandshake({
       await nfcExchanger.stopHandshakeListener();
       setState((prev) => ({ ...prev, isScanning: false }));
     } catch (error) {
-      console.error('Failed to stop NFC listener:', error);
+      console.warn('Failed to stop NFC listener:', error);
     }
   }, []);
 
