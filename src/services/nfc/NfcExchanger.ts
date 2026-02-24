@@ -33,17 +33,24 @@ import { logger } from '@/lib/logger';
 const NFC_PROTOCOL_VERSION = '1.0.0';
 const ALIVE_NFC_RECORD_TYPE = 'alive.connection/v1';
 const ALIVE_BASE_URL = 'https://alive-connection.app/connect';
+const ALIVE_HCE_URL_PREFIX = 'alive://connect';
 
 class NfcExchanger {
   private isInitialized = false;
   private successSound: Audio.Sound | null = null;
   private currentProfileCard: ProfileCard | null = null;
   private hceSession: any = null;
+  private lastHandshakeTime = 0; // 디바운스: 연속 NFC 이벤트 방지
+  private lastHandshakeUserId: string | null = null; // 동일 상대 중복 방지
+  private onHandshakeCallback: ((result: NfcHandshakeResult) => void) | null = null;
+  private foregroundDispatchActive = false;
 
   /**
    * Initialize NFC Manager and preload assets
    */
   async initialize(): Promise<boolean> {
+    if (this.isInitialized) return true;
+
     try {
       // Check if NFC is supported
       const isSupported = await NfcManager.isSupported();
@@ -73,6 +80,9 @@ class NfcExchanger {
             }
           }
         }
+
+        // Android: 즉시 Foreground Dispatch 활성화하여 "앱 선택" 다이얼로그 방지
+        await this.setupAndroidForegroundDispatch();
       } else {
         await NfcManager.start();
       }
@@ -106,6 +116,72 @@ class NfcExchanger {
   }
 
   /**
+   * Android 전용: Foreground Dispatch를 즉시 활성화.
+   * NfcManager.start() 직후 호출하여 OS의 "앱 선택" 다이얼로그를 방지한다.
+   * registerTagEvent()는 enableForegroundDispatch를 사용하므로
+   * HCE(Card Emulation)와 충돌하지 않는다.
+   */
+  private async setupAndroidForegroundDispatch(): Promise<void> {
+    if (this.foregroundDispatchActive) return;
+
+    NfcManager.setEventListener(NfcEvents.DiscoverTag, async (discoveredTag: TagEvent) => {
+      try {
+        // 디바운스: 3초 내 중복 이벤트 무시
+        const now = Date.now();
+        if (now - this.lastHandshakeTime < 3000) return;
+
+        const ndefRecords = discoveredTag.ndefMessage;
+        if (!ndefRecords || ndefRecords.length === 0) return;
+
+        for (const record of ndefRecords) {
+          if (record.tnf === Ndef.TNF_WELL_KNOWN) {
+            try {
+              const uri = Ndef.uri.decodePayload(new Uint8Array(record.payload as number[]));
+              if (!uri.startsWith(ALIVE_HCE_URL_PREFIX + '/') && !uri.startsWith(ALIVE_BASE_URL + '/')) continue;
+
+              const userId = uri.split('/').pop();
+              if (!userId) continue;
+              if (userId === this.currentProfileCard?.userId) continue;
+              if (userId === this.lastHandshakeUserId && now - this.lastHandshakeTime < 10000) continue;
+
+              this.lastHandshakeTime = now;
+              this.lastHandshakeUserId = userId;
+
+              const location = await this.captureLocation();
+              await this.triggerSuccessFeedback();
+
+              const result: NfcHandshakeResult = {
+                success: true,
+                receivedProfile: {
+                  userId,
+                  displayName: 'ALIVE User',
+                  mode: 'business',
+                  visibleLinks: {},
+                },
+                timestamp: new Date().toISOString(),
+                location,
+              };
+
+              if (this.onHandshakeCallback) {
+                this.onHandshakeCallback(result);
+              } else {
+                logger.log('[NFC] Tag detected but no handshake callback registered yet');
+              }
+              return;
+            } catch { /* URI 파싱 실패 — 다음 레코드 시도 */ }
+          }
+        }
+      } catch (err) {
+        logger.error('[NFC] Foreground dispatch error:', err);
+      }
+    });
+
+    await NfcManager.registerTagEvent();
+    this.foregroundDispatchActive = true;
+    logger.log('[NFC] Android foreground dispatch activated');
+  }
+
+  /**
    * Start listening for NFC handshake
    * This is the main "always ready" mode
    */
@@ -121,8 +197,11 @@ class NfcExchanger {
     }
 
     try {
-      // Set the message that this phone will broadcast when touched
       if (Platform.OS === 'android') {
+        // 1. 콜백 등록 (Foreground Dispatch는 initialize()에서 이미 활성화됨)
+        this.onHandshakeCallback = onHandshakeComplete;
+
+        // 2. HCE 세션 시작 — 상대방이 읽을 수 있도록 프로필 URL 브로드캐스트
         const url = `${ALIVE_BASE_URL}/${this.currentProfileCard.userId}`;
         const tag = new NFCTagType4({
           type: NFCTagType4NDEFContentType.URL,
@@ -133,11 +212,6 @@ class NfcExchanger {
         this.hceSession = await HCESession.getInstance();
         await this.hceSession.setApplication(tag);
         await this.hceSession.setEnabled(true);
-
-        // NOTE: For Android, we RELY ON DEEP LINKS (OS-LEVEL Intents) for reading.
-        // If we enable registerTagEvent here, the Reader mode collides with HCE mode
-        // causing a rapid connect/disconnect crash loop.
-        // The OS will naturally read the other phone's URL and fire 'onOpenUrl'.
       } else {
         // Register for tag discovery (iOS and others)
         await (NfcManager as any).registerTagEvent(
@@ -163,10 +237,15 @@ class NfcExchanger {
   async stopHandshakeListener(): Promise<void> {
     try {
       if (Platform.OS === 'android') {
+        // HCE 정리 (Foreground Dispatch는 유지하여 "앱 선택" 다이얼로그 방지)
         if (this.hceSession) {
           await this.hceSession.setEnabled(false);
           this.hceSession = null;
         }
+        // 콜백 & 디바운스 상태 초기화
+        this.onHandshakeCallback = null;
+        this.lastHandshakeUserId = null;
+        this.lastHandshakeTime = 0;
       } else {
         await NfcManager.unregisterTagEvent();
       }
@@ -220,7 +299,8 @@ class NfcExchanger {
       }
 
       // 2. Write our profile to the tag (bidirectional exchange)
-      if (this.currentProfileCard) {
+      // Android: HCE 양방향 브로드캐스트이므로 쓰기 불필요 (상대폰의 HCE는 read-only)
+      if (Platform.OS !== 'android' && this.currentProfileCard) {
         await this.writeProfileToTag(this.currentProfileCard);
       }
 
@@ -271,7 +351,7 @@ class NfcExchanger {
         // URI Support (Direct HTTPS links)
         if (record.tnf === Ndef.TNF_WELL_KNOWN && Ndef.isType(record, Ndef.TNF_WELL_KNOWN, Ndef.RTD_URI)) {
           const uri = Ndef.uri.decodePayload(new Uint8Array(record.payload));
-          if (uri.startsWith(ALIVE_BASE_URL)) {
+          if (uri.startsWith(ALIVE_BASE_URL + '/') || uri.startsWith(ALIVE_HCE_URL_PREFIX + '/')) {
             const userId = uri.split('/').pop();
             if (userId) {
               // Create a skeleton profile - real data will be fetched from Supabase
@@ -377,6 +457,18 @@ class NfcExchanger {
   async cleanup(): Promise<void> {
     try {
       await this.stopHandshakeListener();
+
+      // Android: Foreground Dispatch 해제 (앱 완전 종료 시에만)
+      if (Platform.OS === 'android' && this.foregroundDispatchActive) {
+        try {
+          NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+          await NfcManager.unregisterTagEvent();
+          this.foregroundDispatchActive = false;
+        } catch (e) {
+          logger.warn('[NFC] Foreground dispatch cleanup warning:', e);
+        }
+      }
+
       if (this.successSound) {
         await this.successSound.unloadAsync();
       }

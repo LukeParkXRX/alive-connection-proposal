@@ -83,16 +83,20 @@ export default function App() {
 
     initApp();
 
-    // 4. Deep link handling
+    // 4. Deep link handling (디바운스: 동일 유저 10초 내 중복 방지)
+    let lastDlTime = 0;
+    let lastDlUserId: string | null = null;
     const handleDeepLink = (event: { url: string | null }) => {
       if (!event.url) return;
-      const { path } = Linking.parse(event.url);
 
-      // Handle https://alive-connection.app/connect/[userId]
-      // Use regex to robustly extract the userId regardless of leading slashes
+      // Handle alive://connect/[userId] 또는 https://alive-connection.app/connect/[userId]
       const match = event.url.match(/\/connect\/([a-zA-Z0-9_-]+)/);
       if (match && match[1]) {
         const userId = match[1];
+        const now = Date.now();
+        if (userId === lastDlUserId && now - lastDlTime < 10000) return;
+        lastDlTime = now;
+        lastDlUserId = userId;
         useConnectionStore.getState().handleAutomaticHandshake(userId);
       }
     };
