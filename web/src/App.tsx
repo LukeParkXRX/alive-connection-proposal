@@ -66,13 +66,34 @@ export default function App() {
   const fetchConnections = async () => {
     console.log("ALIVE Dashboard: Fetching connections...");
     try {
+      // 1. auth.users.id → public.users.id 매핑
+      //    interactions 테이블에는 public.users.id가 저장되어 있으므로
+      //    auth_id로 public.users 레코드를 먼저 찾아야 함
+      const authId = session?.user?.id;
+      if (!authId) return;
+
+      const { data: myUser, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('auth_id', authId)
+        .single();
+
+      if (userError || !myUser) {
+        console.warn("ALIVE Dashboard: public.users 조회 실패 (auth_id 기반)", userError);
+        return;
+      }
+
+      const myUserId = myUser.id;
+
+      // 2. 양방향 조회 — 내가 source이거나 target인 모든 interaction
       const { data, error } = await supabase
         .from('interactions')
         .select(`
           *,
+          source_user:users!interactions_source_user_id_fkey(*),
           target_user:users!interactions_target_user_id_fkey(*)
         `)
-        .eq('source_user_id', session?.user?.id)
+        .or(`source_user_id.eq.${myUserId},target_user_id.eq.${myUserId}`)
         .order('met_at', { ascending: false });
 
       if (error) {
@@ -81,7 +102,16 @@ export default function App() {
       }
 
       if (data) {
-        setConnections(data);
+        // 3. 결과 매핑 — 내가 아닌 쪽이 "상대방"
+        const mapped = data.map((row: any) => {
+          const isSource = row.source_user_id === myUserId;
+          const contactUser = isSource ? row.target_user : row.source_user;
+          return {
+            ...row,
+            target_user: contactUser,
+          };
+        });
+        setConnections(mapped);
       }
     } catch (err) {
       console.error("ALIVE Dashboard: Fetch error", err);

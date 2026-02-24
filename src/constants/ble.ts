@@ -1,6 +1,5 @@
 /**
- * BLE 설정 상수 — ALIVE Connection Hybrid Architecture
- * DEV_CONTEXT.md 기준
+ * BLE 설정 상수 — ALIVE Connection BLE Architecture
  */
 
 // ALIVE Connection 전용 BLE 서비스/특성 UUID
@@ -49,15 +48,3 @@ export enum BLEState {
   COMPLETED = 'completed',
   ERROR = 'error',
 }
-
-// NFC/HCE 상수
-export const ALIVE_NFC_CONFIG = {
-  // HCE AID (ALIVE in hex)
-  HCE_AID: 'F0414C495645',
-  // NDEF payload version
-  PAYLOAD_VERSION: 1,
-  // ALIVE Link base URL
-  ALIVE_LINK_BASE: 'https://alive.link',
-  // Connection deep link base
-  CONNECT_BASE_URL: 'https://alive-connection.app/connect',
-} as const;

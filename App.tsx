@@ -14,7 +14,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 
 import { AppNavigator, navigationRef } from './src/navigation';
-import { nfcExchanger } from './src/services/nfc';
 import ExchangeManager from './src/services/exchange/ExchangeManager';
 import { useConnectionStore } from './src/store/useConnectionStore';
 import { useAuthStore } from './src/store/useAuthStore';
@@ -71,17 +70,10 @@ export default function App() {
       }
     });
 
-    // 2. Initialize NFC on app start
-    const initApp = async () => {
-      await nfcExchanger.initialize();
-
-      // 3. ALIVE Engine 지식그래프 초기화 (비동기, 실패해도 앱 동작에 영향 없음)
-      initializeGraph().catch((err) => {
-        logger.warn('[Graph] 지식그래프 초기화 실패:', err);
-      });
-    };
-
-    initApp();
+    // 2. ALIVE Engine 지식그래프 초기화 (비동기, 실패해도 앱 동작에 영향 없음)
+    initializeGraph().catch((err) => {
+      logger.warn('[Graph] 지식그래프 초기화 실패:', err);
+    });
 
     // 4. Deep link handling (디바운스: 동일 유저 10초 내 중복 방지)
     let lastDlTime = 0;
@@ -111,7 +103,6 @@ export default function App() {
 
     // Cleanup on unmount — BleManager 리소스 누수 방지
     return () => {
-      nfcExchanger.cleanup();
       ExchangeManager.getInstance().destroy(); // BleManager.destroy() 포함
       linkingSubscription.remove();
       subscription.unsubscribe();
@@ -154,7 +145,7 @@ export default function App() {
 
           {/* Temporary Build Version Indicator */}
           <View style={{ position: 'absolute', bottom: 10, right: 10, opacity: 0.3, pointerEvents: 'none' }} pointerEvents="none">
-            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>Build: Hybrid-v1</Text>
+            <Text style={{ fontSize: 10, fontWeight: 'bold' }}>Build: BLE-v2</Text>
           </View>
         </SafeAreaProvider>
       </GestureHandlerRootView>

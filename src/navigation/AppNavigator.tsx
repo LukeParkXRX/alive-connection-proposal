@@ -1,5 +1,5 @@
 /**
- * App Navigator - Main navigation structure
+ * App Navigator — 메인 네비게이션 구조 (BLE 전용)
  */
 
 import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
@@ -7,8 +7,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, typography } from '@/constants/theme';
-import { HomeScreen, TimelineScreen, ProfileScreen, LoginScreen, ProfileDetailScreen, ChatScreen, ExchangeReadyScreen } from '@/screens';
+import { typography } from '@/constants/theme';
+import { TimelineScreen, ProfileScreen, LoginScreen, ProfileDetailScreen, ChatScreen, ExchangeReadyScreen } from '@/screens';
 import type { RootStackParamList, MainTabParamList } from '@/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -44,19 +44,9 @@ const MainTabs: React.FC = () => {
         name="Exchange"
         component={ExchangeReadyScreen}
         options={{
-          tabBarLabel: 'Exchange',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wifi-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
           tabBarLabel: 'Connect',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="phone-portrait-outline" size={size} color={color} />
+            <Ionicons name="bluetooth-outline" size={size} color={color} />
           ),
         }}
       />

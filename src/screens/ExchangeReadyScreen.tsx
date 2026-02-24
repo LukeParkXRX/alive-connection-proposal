@@ -1,13 +1,10 @@
 /**
- * ExchangeReadyScreen - v2 Hybrid Exchange Home Screen
+ * ExchangeReadyScreen — BLE 교환 메인 화면
  *
- * BLE 기반 교환 준비 화면 (NFC/HCE 통합)
+ * BLE 양방향 교환 (Central 스캔 + Peripheral 광고 동시 실행)
  * - PulseAnimation으로 스캔 상태 시각화
  * - ExchangeRequestSheet로 근접 기기 승인
  * - 최근 교환 기록 표시
- *
- * NOTE: 이 화면은 HomeScreen.tsx를 대체하지 않습니다.
- * 네비게이션에 추가될 새로운 화면입니다.
  */
 
 import React, { useCallback, useState, useEffect } from 'react';
@@ -119,7 +116,7 @@ export const ExchangeReadyScreen: React.FC = () => {
   const getHintText = () => {
     if (error) return error;
     if (isScanning) {
-      return '근처 ALIVE 사용자를 찾고 있습니다\nNFC를 태깅하거나 HCE 모드를 기다립니다';
+      return '근처 ALIVE 사용자를 찾고 있습니다\n30cm 이내로 가까이 오면 자동 감지됩니다';
     }
     return '아래 버튼을 눌러 교환 모드를 시작하세요';
   };
@@ -156,7 +153,7 @@ export const ExchangeReadyScreen: React.FC = () => {
         <View>
           <Text style={[styles.greeting, dynStyles.greeting]}>ALIVE Exchange</Text>
           <Text style={[styles.subGreeting, dynStyles.subGreeting]}>
-            Hybrid Mode (BLE + NFC + HCE)
+            BLE Mode
           </Text>
         </View>
 

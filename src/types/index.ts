@@ -83,37 +83,12 @@ export interface Connection {
 }
 
 // ============================================
-// NFC Handshake Payload
-// ============================================
-export interface NfcHandshakePayload {
-  version: string;        // Protocol version for compatibility
-  profileCard: ProfileCard;
-  timestamp: string;
-  deviceId: string;       // Anonymous device identifier
-}
-
-export interface NfcHandshakeResult {
-  success: boolean;
-  receivedProfile?: ProfileCard;
-  timestamp: string;
-  location?: LocationData;
-  error?: string;
-}
-
-// ============================================
 // App State Types
 // ============================================
 export interface AuthState {
   isAuthenticated: boolean;
   user: UserProfile | null;
   isLoading: boolean;
-}
-
-export interface NfcState {
-  isSupported: boolean;
-  isEnabled: boolean;
-  isScanning: boolean;
-  lastHandshake: NfcHandshakeResult | null;
 }
 
 // ============================================
@@ -140,7 +115,6 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   Exchange: undefined;
-  Home: undefined;
   Timeline: undefined;
   Profile: undefined;
 };

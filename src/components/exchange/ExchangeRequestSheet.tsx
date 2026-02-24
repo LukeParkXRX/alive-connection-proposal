@@ -40,10 +40,8 @@ const ExchangeRequestSheet: React.FC<ExchangeRequestSheetProps> = ({
     }
   };
 
-  const methodLabel = {
+  const methodLabel: Record<string, string> = {
     ble: 'Bluetooth',
-    nfc: 'NFC',
-    hce: 'NFC (HCE)',
     qr: 'QR Code',
     link: 'Link',
   };

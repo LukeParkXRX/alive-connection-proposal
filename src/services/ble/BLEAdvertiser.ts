@@ -1,17 +1,25 @@
 /**
- * BLEAdvertiser — BLE Peripheral 모드 광고 서비스
+ * BLEAdvertiser — BLE Peripheral 모드 (GATT 서버 + 광고)
  *
- * 현재 MVP: react-native-ble-plx는 Peripheral 미지원이므로,
- * 이 모듈은 추후 네이티브 브릿지 구현 시의 인터페이스를 정의합니다.
- *
- * Phase 2 확장:
- * - Android: BluetoothLeAdvertiser 네이티브 모듈
- * - iOS: CBPeripheralManager 네이티브 브릿지
+ * NativeModules.AliveBlePeripheral을 호출하여
+ * GATT 서버에 userId characteristic을 제공하고 BLE 광고를 수행합니다.
+ * BLEScanner가 GATT 연결로 userId를 읽는 구조와 호환됩니다.
  */
 
-import { Platform } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 import { ALIVE_BLE_CONFIG } from '@/constants/ble';
 import { logger } from '@/lib/logger';
+
+/** 네이티브 모듈 타입 정의 — AliveBlePeripheral */
+interface AliveBlePeripheralNative {
+  startPeripheral(serviceUuid: string, charUuid: string, userId: string): Promise<boolean>;
+  stopPeripheral(): Promise<boolean>;
+  isSupported(): Promise<boolean>;
+}
+
+const { AliveBlePeripheral } = NativeModules as {
+  AliveBlePeripheral: AliveBlePeripheralNative | undefined;
+};
 
 type AdvertiserState = 'idle' | 'advertising' | 'error';
 
@@ -20,91 +28,86 @@ class BLEAdvertiser {
   private userId: string | null = null;
 
   /**
-   * userId를 base64로 인코딩 (BLE characteristic value 용)
-   */
-  static encodeUserId(userId: string): string {
-    // Simple base64 encode for React Native
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    let result = '';
-    let i = 0;
-    while (i < userId.length) {
-      const a = userId.charCodeAt(i++);
-      const b = i < userId.length ? userId.charCodeAt(i++) : 0;
-      const c = i < userId.length ? userId.charCodeAt(i++) : 0;
-      const bitmap = (a << 16) | (b << 8) | c;
-      result += chars.charAt((bitmap >> 18) & 63);
-      result += chars.charAt((bitmap >> 12) & 63);
-      result += i - 2 < userId.length ? chars.charAt((bitmap >> 6) & 63) : '=';
-      result += i - 1 < userId.length ? chars.charAt(bitmap & 63) : '=';
-    }
-    return result;
-  }
-
-  /**
-   * Set the userId to advertise
+   * 광고할 userId 설정
    */
   setUserId(userId: string): void {
     this.userId = userId;
   }
 
   /**
-   * Start BLE Peripheral advertising
-   *
-   * MVP: 현재는 로그만 남기고 no-op
-   * 실제 광고는 네이티브 모듈 구현 후 활성화
+   * BLE Peripheral 광고 시작 — 네이티브 GATT 서버 + 광고 가동
    */
   async startAdvertising(): Promise<boolean> {
     if (!this.userId) {
-      logger.warn('[BLE Advertiser] userId not set');
+      logger.warn('[BLE Advertiser] userId가 설정되지 않았습니다');
+      return false;
+    }
+
+    if (!AliveBlePeripheral) {
+      logger.warn('[BLE Advertiser] 네이티브 모듈 없음 (AliveBlePeripheral)');
+      this.state = 'error';
       return false;
     }
 
     try {
-      // TODO: Phase 2 — 네이티브 Peripheral 모듈 구현
-      // Android: BluetoothLeAdvertiser.startAdvertising()
-      // iOS: CBPeripheralManager.startAdvertising()
-
-      logger.log(`[BLE Advertiser] Advertising started (${Platform.OS}) — userId: ${this.userId.slice(0, 8)}...`);
-      logger.log(`[BLE Advertiser] Service UUID: ${ALIVE_BLE_CONFIG.SERVICE_UUID}`);
-      logger.log('[BLE Advertiser] NOTE: True BLE Peripheral requires native module — using scan-only mode for MVP');
+      await AliveBlePeripheral.startPeripheral(
+        ALIVE_BLE_CONFIG.SERVICE_UUID,
+        ALIVE_BLE_CONFIG.CHAR_USER_ID,
+        this.userId
+      );
 
       this.state = 'advertising';
+      logger.log(
+        `[BLE Advertiser] 광고 시작 (${Platform.OS}) — userId: ${this.userId.slice(0, 8)}...`
+      );
       return true;
     } catch (err) {
-      logger.warn('[BLE Advertiser] Failed to start:', err);
+      logger.warn('[BLE Advertiser] 광고 시작 실패:', err);
       this.state = 'error';
       return false;
     }
   }
 
   /**
-   * Stop BLE Peripheral advertising
+   * BLE Peripheral 광고 중지
    */
   async stopAdvertising(): Promise<void> {
-    try {
-      // TODO: Stop native advertising
+    if (!AliveBlePeripheral) {
       this.state = 'idle';
-      logger.log('[BLE Advertiser] Stopped advertising');
+      return;
+    }
+
+    try {
+      await AliveBlePeripheral.stopPeripheral();
+      this.state = 'idle';
+      logger.log('[BLE Advertiser] 광고 중지됨');
     } catch (err) {
-      logger.warn('[BLE Advertiser] Failed to stop:', err);
+      logger.warn('[BLE Advertiser] 광고 중지 실패:', err);
+      this.state = 'idle';
     }
   }
 
   /**
-   * Get current advertiser state
+   * 현재 광고 상태 반환
    */
   getState(): AdvertiserState {
     return this.state;
   }
 
   /**
-   * Check if BLE Peripheral is supported on this device
+   * 이 기기에서 BLE Peripheral 지원 여부 확인
    */
   static async isPeripheralSupported(): Promise<boolean> {
-    // TODO: Check native capability
-    // For now, return false since we don't have native module yet
-    logger.log('[BLE Advertiser] Peripheral mode: native module not yet implemented');
-    return false;
+    if (!AliveBlePeripheral) {
+      logger.log('[BLE Advertiser] 네이티브 모듈 없음 — Peripheral 미지원');
+      return false;
+    }
+
+    try {
+      return await AliveBlePeripheral.isSupported();
+    } catch {
+      return false;
+    }
   }
 }
 

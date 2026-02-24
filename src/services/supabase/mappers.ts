@@ -40,6 +40,7 @@ export interface DbInteractionRow {
   memo?: string | null;
   voice_memo_url?: string | null;
   tags?: string[] | null;
+  status?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -138,5 +139,6 @@ export function mapInteractionToDbRow(
     event_context: interaction.eventContext,
     memo: interaction.memo,
     tags: interaction.tags || [],
+    status: 'active',
   };
 }

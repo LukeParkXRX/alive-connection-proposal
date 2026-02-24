@@ -138,9 +138,29 @@ export const useConnectionStore = create<ConnectionState>()(
         set({ isLoading: loading });
       },
 
-      // Supabase에 interaction 저장
+      // Supabase에 interaction 저장 (5분 내 동일 pair 중복 방지)
       saveInteractionToSupabase: async (interaction) => {
         try {
+          // 중복 방지: 최근 5분 내 동일 pair (양방향)가 있는지 확인
+          const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          const userA = interaction.sourceUserId;
+          const userB = interaction.targetUserId;
+
+          const { data: existing } = await supabase
+            .from('interactions')
+            .select('id')
+            .gte('met_at', fiveMinAgo)
+            .or(
+              `and(source_user_id.eq.${userA},target_user_id.eq.${userB}),` +
+              `and(source_user_id.eq.${userB},target_user_id.eq.${userA})`
+            )
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            logger.log('[Connections] 5분 내 동일 교환 존재 — 중복 저장 건너뜀');
+            return existing[0].id;
+          }
+
           const dbRow = mapInteractionToDbRow(interaction);
           const { data, error } = await supabase
             .from('interactions')

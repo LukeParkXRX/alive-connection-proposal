@@ -1,19 +1,16 @@
 /**
  * ExchangeManager — 통합 교환 조율 싱글톤
  *
- * BLE (Primary) + NFC (Boost) + QR (Fallback) 모든 교환 방식 통합 관리.
- * DEV_CONTEXT.md 아키텍처 기준 구현.
+ * BLE (Primary) + QR (Fallback) 교환 방식 통합 관리.
  */
 
-import { Platform } from 'react-native';
 import { logger } from '@/lib/logger';
 import BLEExchangeService from '../ble/BLEExchangeService';
-import NFCExchangeService from '../nfc/NFCExchangeService';
 import { supabase } from '../supabase';
 import { mapDbUserToProfile, createSkeletonProfile } from '../supabase/mappers';
 import LocationService from '../location/LocationService';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { ExchangeEvent, ExchangeMethod, CreateExchangeRequest } from '@/types/ble';
+import type { ExchangeEvent, ExchangeMethod } from '@/types/ble';
 import type { ProfileCard, LocationData, Connection, UserProfile } from '@/types';
 
 type ExchangeListener = (event: ExchangeEvent) => void;
@@ -22,15 +19,12 @@ class ExchangeManager {
   private static instance: ExchangeManager;
 
   private bleService: BLEExchangeService;
-  private nfcService: NFCExchangeService;
   private listeners: ExchangeListener[] = [];
   private bleCleanup: (() => void) | null = null;
-  private nfcCleanup: (() => void) | null = null;
   private isActive = false;
 
   private constructor() {
     this.bleService = new BLEExchangeService();
-    this.nfcService = new NFCExchangeService();
   }
 
   /**
@@ -44,50 +38,31 @@ class ExchangeManager {
   }
 
   /**
-   * 교환 모드 시작 (홈 화면 진입 시 호출)
-   * BLE 스캔 + NFC 리스닝 동시 시작
+   * 교환 모드 시작 — BLE 스캔 + 광고 동시 시작
    */
-  async startExchangeMode(userId: string, profileCard: ProfileCard): Promise<boolean> {
+  async startExchangeMode(userId: string, _profileCard: ProfileCard): Promise<boolean> {
     if (this.isActive) {
-      logger.log('[ExchangeManager] Already active');
+      logger.log('[ExchangeManager] 이미 활성 상태');
       return true;
     }
 
-    let anyStarted = false;
-
-    // 1. BLE 발견 시작 (Primary Layer)
     try {
       const bleStarted = await this.bleService.startDiscovery(userId);
       if (bleStarted) {
         this.bleCleanup = this.bleService.on((event: ExchangeEvent) => {
           this.handleExchangeEvent(event);
         });
-        anyStarted = true;
-        logger.log('[ExchangeManager] BLE layer started');
+        this.isActive = true;
+        logger.log('[ExchangeManager] BLE 교환 모드 시작됨');
+        return true;
       }
-    } catch (err) {
-      logger.warn('[ExchangeManager] BLE 시작 실패:', err);
-    }
 
-    // 2. NFC 리스너 시작 (Boost Layer — 가능한 기기만)
-    try {
-      const nfcSupported = await this.nfcService.isSupported();
-      if (nfcSupported) {
-        const nfcStarted = await this.nfcService.startListening(profileCard);
-        if (nfcStarted) {
-          this.nfcCleanup = this.nfcService.on((event: ExchangeEvent) => {
-            this.handleExchangeEvent(event);
-          });
-          anyStarted = true;
-          logger.log('[ExchangeManager] NFC layer started');
-        }
-      }
+      logger.warn('[ExchangeManager] BLE 시작 실패');
+      return false;
     } catch (err) {
-      logger.warn('[ExchangeManager] NFC 시작 실패:', err);
+      logger.warn('[ExchangeManager] 교환 모드 시작 실패:', err);
+      return false;
     }
-
-    this.isActive = anyStarted;
-    return anyStarted;
   }
 
   /**
@@ -95,19 +70,14 @@ class ExchangeManager {
    */
   stopExchangeMode(): void {
     this.bleService.stopDiscovery();
-    this.nfcService.stopListening();
 
     if (this.bleCleanup) {
       this.bleCleanup();
       this.bleCleanup = null;
     }
-    if (this.nfcCleanup) {
-      this.nfcCleanup();
-      this.nfcCleanup = null;
-    }
 
     this.isActive = false;
-    logger.log('[ExchangeManager] Exchange mode stopped');
+    logger.log('[ExchangeManager] 교환 모드 중지됨');
   }
 
   /**
@@ -193,7 +163,7 @@ class ExchangeManager {
 
       return connection;
     } catch (err) {
-      logger.error('[ExchangeManager] Exchange accept failed:', err);
+      logger.error('[ExchangeManager] 교환 수락 실패:', err);
       this.emit({
         type: 'error',
         partnerId,
@@ -212,7 +182,7 @@ class ExchangeManager {
   }
 
   /**
-   * 교환 이벤트 처리 (BLE/NFC → 통합)
+   * 교환 이벤트 처리 (BLE → 통합)
    */
   private handleExchangeEvent(event: ExchangeEvent): void {
     logger.log(`[ExchangeManager] Event: ${event.type} via ${event.method || 'unknown'}`);
@@ -246,7 +216,6 @@ class ExchangeManager {
   destroy(): void {
     this.stopExchangeMode();
     this.bleService.destroy();
-    this.nfcService.cleanup();
     this.listeners = [];
   }
 }
