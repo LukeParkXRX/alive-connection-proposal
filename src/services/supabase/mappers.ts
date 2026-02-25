@@ -6,6 +6,15 @@
 import type { UserProfile, Interaction, LocationData, SocialLinks } from '@/types';
 
 // ============================================================================
+// 타입 가드 헬퍼
+// ============================================================================
+
+/** DB에서 온 값이 Record 타입인지 확인 (JSONB 필드용) */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// ============================================================================
 // DB Row 타입 정의 (Supabase 스키마 기반)
 // ============================================================================
 
@@ -49,14 +58,14 @@ export interface DbInteractionRow {
 export function mapDbUserToProfile(dbUser: DbUserRow): UserProfile {
   return {
     id: dbUser.id,
-    name: dbUser.name,
+    name: dbUser.name ?? '',
     gender: dbUser.gender,
     bio: dbUser.bio,
     avatarUrl: dbUser.avatar_url,
     company: dbUser.company,
     title: dbUser.title,
-    viewCount: dbUser.profile_view_count,
-    socialLinks: dbUser.social_links || {},
+    viewCount: dbUser.profile_view_count ?? 0,
+    socialLinks: isRecord(dbUser.social_links) ? dbUser.social_links as SocialLinks : {},
     createdAt: dbUser.created_at,
     updatedAt: dbUser.updated_at,
   };
@@ -84,17 +93,17 @@ export function mapDbInteractionToModel(dbRow: DbInteractionRow): Interaction {
     targetUserId: dbRow.target_user_id,
     metAt: dbRow.met_at,
     location: {
-      latitude: dbRow.location_lat || 0,
-      longitude: dbRow.location_lng || 0,
-      address: dbRow.location_address,
-      placeName: dbRow.location_place_name,
-      city: dbRow.location_city,
-      country: dbRow.location_country,
+      latitude: dbRow.location_lat ?? 0,
+      longitude: dbRow.location_lng ?? 0,
+      address: dbRow.location_address ?? undefined,
+      placeName: dbRow.location_place_name ?? undefined,
+      city: dbRow.location_city ?? undefined,
+      country: dbRow.location_country ?? undefined,
     },
-    eventContext: dbRow.event_context,
-    memo: dbRow.memo,
-    voiceMemoUrl: dbRow.voice_memo_url,
-    tags: dbRow.tags,
+    eventContext: dbRow.event_context ?? undefined,
+    memo: dbRow.memo ?? undefined,
+    voiceMemoUrl: dbRow.voice_memo_url ?? undefined,
+    tags: dbRow.tags ?? undefined,
     createdAt: dbRow.created_at,
     updatedAt: dbRow.updated_at,
   };
@@ -138,7 +147,7 @@ export function mapInteractionToDbRow(
     location_country: interaction.location?.country,
     event_context: interaction.eventContext,
     memo: interaction.memo,
-    tags: interaction.tags || [],
+    tags: Array.isArray(interaction.tags) ? interaction.tags : [],
     status: 'active',
   };
 }

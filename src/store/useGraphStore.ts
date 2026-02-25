@@ -21,10 +21,16 @@ import {
 import {
   enqueue,
   processQueue,
-  createNodeOperation,
   createEdgeOperation,
   createConversationOperation,
 } from '@/services/alive-engine/offline-queue';
+import { buildHandshakeGraph } from '@/services/alive-engine/graph-builders';
+import {
+  executeOnline,
+  enqueueOffline,
+  buildOptimisticNodes,
+  buildOptimisticEdges,
+} from '@/services/alive-engine/graph-sync';
 
 interface GraphState {
   // ============================================================================
@@ -215,169 +221,21 @@ export const useGraphStore = create<GraphState>()(
             return;
           }
 
-          // 생성할 노드 목록
-          const nodesToCreate: Array<{
-            label: string;
-            type: string;
-            content: string;
-          }> = [];
+          const { nodes, edges } = buildHandshakeGraph(profile, interaction);
 
-          // 생성할 엣지 목록
-          const edgesToCreate: Array<{
-            source: string;
-            target: string;
-            relation: string;
-          }> = [];
-
-          // -----------------------------------------------------------------
-          // 1. [person] 노드 생성
-          // -----------------------------------------------------------------
-          const personLabel = profile.name;
-          const personContent = profile.title && profile.company
-            ? `${profile.title} at ${profile.company}`
-            : profile.title || profile.company || '';
-
-          const personNode = {
-            label: personLabel,
-            type: 'person',
-            content: personContent,
-          };
-          nodesToCreate.push(personNode);
-
-          // -----------------------------------------------------------------
-          // 2. [organization] 노드 생성 (회사 정보가 있을 경우)
-          // -----------------------------------------------------------------
-          if (profile.company) {
-            const orgNode = {
-              label: profile.company,
-              type: 'organization',
-              content: `조직: ${profile.company}`,
-            };
-            nodesToCreate.push(orgNode);
-
-            // [person] → WORKS_AT → [organization]
-            edgesToCreate.push({
-              source: personLabel,
-              target: profile.company,
-              relation: 'WORKS_AT',
-            });
-          }
-
-          // -----------------------------------------------------------------
-          // 3. [location] 노드 생성 (장소명이 있을 경우)
-          // -----------------------------------------------------------------
-          if (interaction.location.placeName) {
-            const locationNode = {
-              label: interaction.location.placeName,
-              type: 'location',
-              content: `장소: ${interaction.location.placeName}`,
-            };
-            nodesToCreate.push(locationNode);
-
-            // me → VISITED → [location]
-            edgesToCreate.push({
-              source: 'me',
-              target: interaction.location.placeName,
-              relation: 'VISITED',
-            });
-          }
-
-          // -----------------------------------------------------------------
-          // 4. [event] 노드 생성 (이벤트 컨텍스트가 있을 경우)
-          // -----------------------------------------------------------------
-          if (interaction.eventContext) {
-            const eventNode = {
-              label: interaction.eventContext,
-              type: 'event',
-              content: `이벤트: ${interaction.eventContext}`,
-            };
-            nodesToCreate.push(eventNode);
-
-            // me → ATTENDS → [event]
-            edgesToCreate.push({
-              source: 'me',
-              target: interaction.eventContext,
-              relation: 'ATTENDS',
-            });
-          }
-
-          // -----------------------------------------------------------------
-          // 5. me → KNOWS → [person] 엣지
-          // -----------------------------------------------------------------
-          edgesToCreate.push({
-            source: 'me',
-            target: personLabel,
-            relation: 'KNOWS',
-          });
-
-          // -----------------------------------------------------------------
-          // 6. 온라인/오프라인 처리
-          // -----------------------------------------------------------------
           if (isOnline) {
-            // 온라인: API 병렬 호출 (N+1 순차 루프 → Promise.allSettled)
-            const nodeResults = await Promise.allSettled(
-              nodesToCreate.map((node) => graphApi.createNode(node, beingId))
-            );
-            nodeResults.forEach((result, i) => {
-              if (result.status === 'fulfilled') {
-                logger.log(`[GraphStore] 노드 생성 성공: ${nodesToCreate[i].label}`);
-              } else {
-                logger.warn(`[GraphStore] 노드 생성 실패: ${nodesToCreate[i].label}`, result.reason);
-              }
-            });
-
-            const edgeResults = await Promise.allSettled(
-              edgesToCreate.map((edge) => graphApi.createEdge(edge, beingId))
-            );
-            edgeResults.forEach((result, i) => {
-              const edge = edgesToCreate[i];
-              if (result.status === 'fulfilled') {
-                logger.log(`[GraphStore] 엣지 생성 성공: ${edge.source} → ${edge.relation} → ${edge.target}`);
-              } else {
-                logger.warn(`[GraphStore] 엣지 생성 실패: ${edge.source} → ${edge.relation} → ${edge.target}`, result.reason);
-              }
-            });
-
-            // 최신 그래프 리프레시
+            await executeOnline(nodes, edges, beingId);
             await get().refreshGraph();
           } else {
-            // 오프라인: 큐에 추가
-            for (const node of nodesToCreate) {
-              await enqueue(createNodeOperation(beingId, node));
-            }
-
-            for (const edge of edgesToCreate) {
-              await enqueue(createEdgeOperation(beingId, edge));
-            }
-
-            logger.log('[GraphStore] 오프라인 모드 - 큐에 작업 추가');
+            await enqueueOffline(nodes, edges, beingId);
 
             // 로컬 그래프 상태 업데이트 (낙관적 업데이트)
-            set((state) => {
-              const newNodes: OntologyNode[] = nodesToCreate.map((node) => ({
-                id: `local_${Date.now()}_${Math.random()}`,
-                label: node.label,
-                type: node.type as any,
-                content: node.content,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              }));
-
-              const newEdges = edgesToCreate.map((edge) => ({
-                id: `local_${Date.now()}_${Math.random()}`,
-                source: edge.source,
-                target: edge.target,
-                relation: edge.relation,
-                createdAt: new Date().toISOString(),
-              }));
-
-              return {
-                graph: {
-                  nodes: [...state.graph.nodes, ...newNodes],
-                  edges: [...state.graph.edges, ...newEdges],
-                },
-              };
-            });
+            set((state) => ({
+              graph: {
+                nodes: [...state.graph.nodes, ...buildOptimisticNodes(nodes)],
+                edges: [...state.graph.edges, ...buildOptimisticEdges(edges)],
+              },
+            }));
           }
 
           logger.log('[GraphStore] addPersonNode 완료');
@@ -402,40 +260,18 @@ export const useGraphStore = create<GraphState>()(
             return;
           }
 
-          const edgeData = {
-            source: sourceId,
-            target: targetId,
-            relation: relationType,
-          };
+          const edgeData = { source: sourceId, target: targetId, relation: relationType };
 
           if (isOnline) {
-            // 온라인: API 직접 호출
-            await graphApi.createEdge(edgeData, beingId);
-            logger.log(
-              `[GraphStore] 엣지 생성 성공: ${sourceId} → ${relationType} → ${targetId}`
-            );
-
-            // 최신 그래프 리프레시
+            await executeOnline([], [edgeData], beingId);
             await get().refreshGraph();
           } else {
-            // 오프라인: 큐에 추가 (이미 검증된 beingId 재사용)
-            await enqueue(createEdgeOperation(beingId, edgeData));
-            logger.log('[GraphStore] 오프라인 모드 - 엣지 작업 큐에 추가');
+            await enqueueOffline([], [edgeData], beingId);
 
-            // 로컬 그래프 상태 업데이트
             set((state) => ({
               graph: {
                 ...state.graph,
-                edges: [
-                  ...state.graph.edges,
-                  {
-                    id: `local_${Date.now()}_${Math.random()}`,
-                    source: sourceId,
-                    target: targetId,
-                    relation: relationType,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
+                edges: [...state.graph.edges, ...buildOptimisticEdges([edgeData])],
               },
             }));
           }
