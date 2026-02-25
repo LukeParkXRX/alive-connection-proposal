@@ -2127,12 +2127,12 @@
         <span class="lang-kr">NFC 완전 제거. 커스텀 네이티브 BLE Peripheral 모듈 구축 (Android Kotlin + iOS Swift). Fast Path 프로토콜 (~100ms Manufacturer Data 교환). GATT 폴백. 크로스 플랫폼 검증 완료.</span>
       </div>
     </div>
-    <div class="timeline-item done">
-      <div class="timeline-date" style="color:var(--green);font-weight:700;">2026.02 &mdash; MVP 1 <span class="lang-en">Complete</span><span class="lang-kr">완료</span></div>
-      <div class="timeline-title"><span class="lang-en">Internal Beta Release</span><span class="lang-kr">내부 베타 릴리즈</span></div>
+    <div class="timeline-item">
+      <div class="timeline-date" style="color:var(--orange);font-weight:700;">2026.02 &mdash; MVP 1 <span class="lang-en">In Progress</span><span class="lang-kr">진행 중</span></div>
+      <div class="timeline-title"><span class="lang-en">Core Development + Internal Testing</span><span class="lang-kr">핵심 개발 + 내부 테스트</span></div>
       <div class="timeline-desc">
-        <span class="lang-en">Supabase integration complete, real device BLE exchange verified, release APK built (70MB), 9 critical bugs fixed, 3-way code review passed.</span>
-        <span class="lang-kr">Supabase 실연동 완료, 실기기 BLE 교환 검증, 릴리즈 APK 빌드 (70MB), 9개 크리티컬 버그 수정, 3방향 코드 리뷰 통과.</span>
+        <span class="lang-en">Core features developed: BLE exchange, Supabase integration, 6 screens, web dashboard. Android APK built (70MB). 9 critical bugs fixed. Currently testing on real devices and refining UX.</span>
+        <span class="lang-kr">핵심 기능 개발 완료: BLE 교환, Supabase 연동, 6개 화면, 웹 대시보드. Android APK 빌드 (70MB). 9개 크리티컬 버그 수정. 현재 실기기 테스트 및 UX 다듬기 진행 중.</span>
       </div>
     </div>
     <div class="timeline-item">
@@ -3402,7 +3402,7 @@ Byte [4-19] : <span class="str">userId</span>       <span class="cmt">// 16-byte
     <span class="subtitle">Remaining Tasks &amp; Priorities</span>
   </h1>
 
-  <h2>P0 &mdash; <span class="lang-en">Critical (MVP Requirements)</span><span class="lang-kr">필수 (MVP 완성 요건)</span> <span class="badge" style="background:var(--tag-green-bg,rgba(34,197,94,0.15));color:var(--tag-green-fg,#22c55e);">COMPLETE</span></h2>
+  <h2>P0 &mdash; <span class="lang-en">Critical (MVP Requirements)</span><span class="lang-kr">필수 (MVP 완성 요건)</span> <span class="badge" style="background:var(--tag-orange-bg,rgba(245,158,11,0.15));color:var(--tag-orange-fg,#f59e0b);">6/9</span></h2>
   <ul class="checklist">
     <li><span class="check done">&#10003;</span><strong>Supabase <span class="lang-en">env vars setup</span><span class="lang-kr">환경변수 설정</span></strong> &mdash; <span class="lang-en">.env (mobile) + web/.env.local (web) configured.</span><span class="lang-kr">.env (모바일) + web/.env.local (웹) 설정 완료.</span></li>
     <li><span class="check done">&#10003;</span><strong>DB <span class="lang-en">schema deploy</span><span class="lang-kr">스키마 배포</span></strong> &mdash; <span class="lang-en">schema.sql + expansion_schema.sql deployed to Supabase.</span><span class="lang-kr">schema.sql + expansion_schema.sql Supabase 배포 완료.</span></li>
@@ -3521,12 +3521,18 @@ Byte [4-19] : <span class="str">userId</span>       <span class="cmt">// 16-byte
       </div>
     </div>
 
-    <div class="timeline-item done">
-      <div class="timeline-date">2026.02 · Week 3-4</div>
-      <div class="timeline-title">MVP 1 &mdash; <span class="lang-en">BLE Auto-Exchange + Cross-Platform Viewing</span><span class="lang-kr">BLE 자동 교환 + 크로스 플랫폼 열람</span> <span class="tag tag-green" style="margin-left:6px;"><span class="lang-en">COMPLETE</span><span class="lang-kr">완료</span></span></div>
+    <div class="timeline-item">
+      <div class="timeline-date">2026.02 ~ 03</div>
+      <div class="timeline-title">MVP 1 &mdash; <span class="lang-en">BLE Auto-Exchange + Cross-Platform Viewing</span><span class="lang-kr">BLE 자동 교환 + 크로스 플랫폼 열람</span> <span class="tag tag-orange" style="margin-left:6px;"><span class="lang-en">IN PROGRESS</span><span class="lang-kr">진행 중</span></span></div>
       <div class="timeline-desc">
-        <span class="lang-en">Two phones automatically exchange profile information via BLE proximity. Exchanged data is saved for both users and can be viewed on both the mobile app and web dashboard. Includes: custom native BLE peripheral modules (Android Kotlin + iOS Swift), Fast Path (~100ms) + GATT Fallback exchange, dual-mode profiles (Business/Casual), GPS location capture, chronological timeline, memo system, 1:1 Realtime messaging, ALIVE Engine knowledge graph integration, and a full React web dashboard.</span>
-        <span class="lang-kr">두 대의 폰이 BLE 근접 감지로 프로필 정보를 자동 교환합니다. 교환된 데이터는 양쪽 사용자에게 저장되며, 모바일 앱과 웹 대시보드 모두에서 열람할 수 있습니다. 포함: 커스텀 네이티브 BLE Peripheral (Android Kotlin + iOS Swift), Fast Path (~100ms) + GATT Fallback 교환, 듀얼 모드 프로필 (Business/Casual), GPS 위치 캡처, 시간순 타임라인, 메모 시스템, 1:1 실시간 메시징, ALIVE Engine 지식그래프 통합, React 웹 대시보드.</span>
+        <span class="lang-en"><strong>Goal:</strong> Two phones exchange profiles via BLE proximity &rarr; data saved for both users &rarr; viewable on mobile app and web dashboard.</span>
+        <span class="lang-kr"><strong>목표:</strong> 두 대의 폰이 BLE 근접 감지로 프로필 교환 &rarr; 양쪽 사용자에게 저장 &rarr; 모바일 앱과 웹 대시보드에서 열람.</span>
+        <br><br>
+        <span class="lang-en"><strong>Done:</strong> Custom native BLE peripheral (Android Kotlin + iOS Swift), BLE scan + advertise, Fast Path protocol (~100ms), GATT Fallback, 6 screens UI, 6 Zustand stores, Supabase Auth + DB integration, web dashboard (React 19), GPS location capture, 1:1 messaging (Supabase Realtime), ALIVE Engine client integration, Android APK build.</span>
+        <span class="lang-kr"><strong>완료:</strong> 커스텀 네이티브 BLE Peripheral (Android Kotlin + iOS Swift), BLE 스캔 + 광고, Fast Path (~100ms), GATT Fallback, 6개 화면 UI, 6개 Zustand 스토어, Supabase 인증 + DB 연동, 웹 대시보드 (React 19), GPS 위치 캡처, 1:1 메시징 (Supabase Realtime), ALIVE Engine 클라이언트 연동, Android APK 빌드.</span>
+        <br>
+        <span class="lang-en"><strong>In Progress:</strong> Real-device BLE exchange testing, profile photo upload, iOS build, end-to-end QA.</span>
+        <span class="lang-kr"><strong>진행 중:</strong> 실기기 BLE 교환 테스트, 프로필 사진 업로드, iOS 빌드, E2E QA.</span>
       </div>
     </div>
 
