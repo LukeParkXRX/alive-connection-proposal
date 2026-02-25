@@ -66,5 +66,5 @@ test_linking.js
 # Server build output
 server/dist/
 
-# Project info (old Vercel experiment)
-project_info/
+# Project info — Vercel 배포 피치 페이지 (삭제 금지)
+# project_info/

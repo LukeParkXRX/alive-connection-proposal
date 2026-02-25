@@ -177,14 +177,40 @@ export default function App() {
       {
         id: 'conn-1',
         met_at: new Date().toISOString(),
-        location_place_name: 'ALIVE Demo Center',
-        location_address: 'Seoul, South Korea',
+        location_place_name: 'COEX 스타트업 밋업',
+        location_address: '서울특별시 강남구 삼성동',
         target_user: {
           name: 'Demo Connection',
-          title: 'ALIVE Platform Lead',
+          title: 'Product Designer',
           company: 'XRX Labs',
-          bio: 'Welcome to the ALIVE Guest Dashboard! This is a preview of how you can manage your connections.',
+          bio: 'ALIVE 게스트 대시보드에 오신 것을 환영합니다! BLE 교환으로 연결된 사람들의 프로필과 만남 기록을 여기서 관리할 수 있습니다.',
           avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
+        }
+      },
+      {
+        id: 'conn-2',
+        met_at: new Date(Date.now() - 86400000).toISOString(),
+        location_place_name: '판교 테크노밸리',
+        location_address: '경기도 성남시 분당구 판교역로',
+        target_user: {
+          name: 'Alex Kim',
+          title: 'Backend Engineer',
+          company: 'ALIVE Labs',
+          bio: '분산 시스템과 Knowledge Graph에 관심이 많습니다.',
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex'
+        }
+      },
+      {
+        id: 'conn-3',
+        met_at: new Date(Date.now() - 172800000).toISOString(),
+        location_place_name: '역삼 위워크',
+        location_address: '서울특별시 강남구 역삼동',
+        target_user: {
+          name: 'Sarah Park',
+          title: 'UX Researcher',
+          company: 'Naver',
+          bio: '사용자 경험과 관계 데이터 시각화를 연구합니다.',
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah'
         }
       }
     ]);

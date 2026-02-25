@@ -72,14 +72,33 @@ export function ConnectionDetail({ connection }: ConnectionDetailProps) {
         <h3 className="text-[11px] font-black uppercase tracking-[0.15em] text-textTertiary dark:text-gray-500 mb-4">
           Social Presence
         </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-4 bg-backgroundAlt dark:bg-gray-800 rounded-2xl border border-border/10 dark:border-gray-700 flex items-center justify-center opacity-40 italic text-xs text-textSecondary dark:text-gray-500">
-            Syncing links...
+        {connection.target_user?.social_links || connection.target_user?.linkedin || connection.target_user?.website ? (
+          <div className="space-y-2">
+            {connection.target_user?.linkedin && (
+              <a href={connection.target_user.linkedin} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-backgroundAlt dark:bg-gray-800 rounded-xl hover:bg-accent/10 dark:hover:bg-accent/20 transition-colors group">
+                <span className="text-sm">💼</span>
+                <span className="text-sm font-medium text-textPrimary dark:text-gray-200 group-hover:text-accent truncate">LinkedIn</span>
+              </a>
+            )}
+            {connection.target_user?.website && (
+              <a href={connection.target_user.website} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-backgroundAlt dark:bg-gray-800 rounded-xl hover:bg-accent/10 dark:hover:bg-accent/20 transition-colors group">
+                <span className="text-sm">🌐</span>
+                <span className="text-sm font-medium text-textPrimary dark:text-gray-200 group-hover:text-accent truncate">Website</span>
+              </a>
+            )}
           </div>
-          <div className="p-4 bg-backgroundAlt dark:bg-gray-800 rounded-2xl border border-border/10 dark:border-gray-700 flex items-center justify-center opacity-40 italic text-xs text-textSecondary dark:text-gray-500">
-            Lock status checking...
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-xs text-textTertiary dark:text-gray-500 font-medium">
+              소셜 링크가 아직 등록되지 않았습니다
+            </p>
+            <p className="text-[10px] text-textTertiary dark:text-gray-600 mt-1">
+              MVP 2에서 프로필 사진 · 소셜 링크 동기화 예정
+            </p>
           </div>
-        </div>
+        )}
       </section>
     </div>
   );

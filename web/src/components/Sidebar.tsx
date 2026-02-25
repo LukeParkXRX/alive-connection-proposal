@@ -62,7 +62,7 @@ export function Sidebar({
           <div>
             <h1 className="text-xl font-bold tracking-tight text-accent">ALIVE</h1>
             <p className="text-[10px] font-bold text-textTertiary dark:text-gray-500 uppercase tracking-wider">
-              Dashboard
+              Dashboard · {connections.length}명 연결
             </p>
           </div>
           <div className="flex items-center gap-1">

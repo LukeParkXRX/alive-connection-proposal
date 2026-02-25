@@ -74,7 +74,7 @@ export function LoginScreen({ onLogin, onGuestLogin, onEmailLogin }: LoginScreen
           ALIVE
         </h1>
         <p className="text-textSecondary dark:text-gray-400 mb-8 text-sm leading-relaxed px-4">
-          Manage your connections and network from your desktop.
+          BLE 교환으로 만든 인연을 웹에서 관리하세요
         </p>
 
         {/* Google OAuth 버튼 */}
@@ -137,7 +137,7 @@ export function LoginScreen({ onLogin, onGuestLogin, onEmailLogin }: LoginScreen
         </button>
 
         <p className="mt-8 text-[10px] text-textTertiary dark:text-gray-600 uppercase tracking-widest font-bold">
-          PC Management Console
+          MVP 1 Complete · BLE Exchange
         </p>
       </div>
     </div>
