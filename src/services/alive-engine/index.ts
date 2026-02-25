@@ -38,6 +38,22 @@ export { graphApi } from './graph-api';
 // 메모리 API
 export { memoryApi } from './memory-api';
 
+// 그래프 빌더 (순수 함수)
+export {
+  buildHandshakeGraph,
+  type NodeBuildData,
+  type EdgeBuildData,
+  type HandshakeGraphData,
+} from './graph-builders';
+
+// 그래프 동기화 (온라인/오프라인)
+export {
+  executeOnline,
+  enqueueOffline,
+  buildOptimisticNodes,
+  buildOptimisticEdges,
+} from './graph-sync';
+
 // 오프라인 큐
 export {
   enqueue,
