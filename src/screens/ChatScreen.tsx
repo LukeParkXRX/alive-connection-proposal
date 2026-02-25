@@ -166,55 +166,57 @@ export const ChatScreen: React.FC = () => {
         isTablet && { maxWidth: 720, alignSelf: 'center', width: '100%' },
       ]}
     >
-      {/* 헤더 */}
-      <View style={[styles.header, { backgroundColor: c.background, borderBottomColor: c.border }]}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로 가기"
-        >
-          <Ionicons name="arrow-back" size={24} color={c.textPrimary} />
-        </Pressable>
-        <View style={styles.headerInfo}>
-          <Text style={[styles.headerName, { color: c.textPrimary, fontSize: fp(17) }]}>
-            {userName || 'Chat'}
-          </Text>
-          {isTargetTyping ? (
-            <Text style={[styles.headerStatus, { color: c.accent }]}>입력 중...</Text>
-          ) : (
-            <Text style={[styles.headerStatus, { color: c.textTertiary }]}>로컬 채팅</Text>
-          )}
-        </View>
-        <View style={{ width: 40 }} />
-      </View>
-
-      {/* 메시지 목록 */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.messageList, messages.length === 0 && styles.emptyList]}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubble-outline" size={wp(48)} color={c.textTertiary} style={{ opacity: 0.3 }} />
-            <Text style={[styles.emptyText, { color: c.textTertiary }]}>
-              {userName}님과 대화를 시작하세요
-            </Text>
-            <Text style={[styles.emptySubtext, { color: c.textTertiary }]}>
-              메시지는 이 기기에만 저장됩니다
-            </Text>
-          </View>
-        }
-      />
-
-      {/* 입력 영역 */}
+      {/* KAV를 전체 콘텐츠(메시지 목록 + 입력창)를 감싸도록 배치
+          — 입력창만 감쌀 경우 메시지 목록이 키보드에 가려지는 문제 방지 */}
       <KeyboardAvoidingView
+        style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
+        {/* 헤더 */}
+        <View style={[styles.header, { backgroundColor: c.background, borderBottomColor: c.border }]}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="뒤로 가기"
+          >
+            <Ionicons name="arrow-back" size={24} color={c.textPrimary} />
+          </Pressable>
+          <View style={styles.headerInfo}>
+            <Text style={[styles.headerName, { color: c.textPrimary, fontSize: fp(17) }]}>
+              {userName || 'Chat'}
+            </Text>
+            {isTargetTyping ? (
+              <Text style={[styles.headerStatus, { color: c.accent }]}>입력 중...</Text>
+            ) : (
+              <Text style={[styles.headerStatus, { color: c.textTertiary }]}>로컬 채팅</Text>
+            )}
+          </View>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* 메시지 목록 */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[styles.messageList, messages.length === 0 && styles.emptyList]}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubble-outline" size={wp(48)} color={c.textTertiary} style={{ opacity: 0.3 }} />
+              <Text style={[styles.emptyText, { color: c.textTertiary }]}>
+                {userName}님과 대화를 시작하세요
+              </Text>
+              <Text style={[styles.emptySubtext, { color: c.textTertiary }]}>
+                메시지는 이 기기에만 저장됩니다
+              </Text>
+            </View>
+          }
+        />
+
+        {/* 입력 영역 */}
         <View style={[styles.inputContainer, { backgroundColor: c.background, borderTopColor: c.border }]}>
           <TextInput
             style={[

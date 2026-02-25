@@ -1,27 +1,50 @@
-# 🧠 ALIVE Project Memory
+# ALIVE Project Memory
 
-## 📅 Session Record: Android NFC Data Exchange Troubleshooting
+## Architecture Transition: NFC → BLE (2026년 2월)
 
-### 🚀 Issue Summary
-- **Symptom 1**: App crashed on Android launch with React Native bundle exception (`fail to get current activity`).
-- **Symptom 2**: NFC completely dead on Android (no scan sound, no system trigger).
-- **Symptom 3**: NFC successfully scans (beeps) but data doesn't get exchanged/parsed on Android deep link.
+### 전환 배경
+- NFC HCE 방식은 Android 간에만 작동, iOS에서 서드파티 P2P NFC가 제한적
+- Samsung NFC 스택 호환성 문제 다수 발생 (인텐트 변환, 앱 선택 다이얼로그 등)
+- iPhone ↔ Android 크로스 플랫폼 필수 → BLE를 기본 교환 레이어로 채택
 
-### 🛠️ Key Fixes & Decisions
-1. **`android/` Folder Regeneration**: 
-   - A `ClassNotFoundException` regarding `MainApplication` was traced back to a corrupted or incomplete native directory. The entire `android/` directory was deleted, relying on EAS Build to dynamically regenerate it with `npx expo prebuild`.
-2. **Robust `NfcManager.start()` Catch-All Retry** (in `NfcExchanger.ts`):
-   - Added a robust 10-retry loop to handle the "fail to get current activity" exception on Android during app startup. Made it a generic catch-all retry to prevent any silent crashes.
-3. **Prevent Production Fatal Crashes** (in `logger.ts` & `useNfcHandshake.ts`):
-   - Changed `console.error` and `logger.error` to `.warn` handling for expected NFC lifecycle errors to prevent full app crashes in production builds.
-4. **Android Deep Link Parsing Regex** (in `App.tsx`):
-   - Fixed buggy `Linking.parse(event.url)` string checking. The URL path sometimes had leading slashes such as `/connect/[userId]` vs `connect/[userId]` depending on the Android OS version. Upgraded to robust Regular Expressions `/\/connect\/([a-zA-Z0-9_-]+)/` to precisely extract `userId`.
-5. **GPS Timeout for Handshakes** (in `LocationService.ts`):
-   - Added a fast-path 3-second `setTimeout` race and `getLastKnownPositionAsync` for GPS coordinates. Solved the critical bug where a lack of GPS signal indoors would silently hang the app mid-handshake infinitely.
-6. **Enabled HCE CardService by Default** (in `withHCE.js`):
-   - `android:enabled="false"` in `AndroidManifest.xml` can cause the internal Android NFC routing table to completely ignore the app's Host Card Emulation service, making the NFC totally unresponsive. Set default `android:enabled="true"` and `android:exported="true"` in the config plugin.
+### 핵심 결정 사항
 
-### 📌 Next Steps
-- Android APK test with 3rd EAS build (`Hybrid-v1` / `build-1771805141410.apk`).
-- Verification of the web dashboard updates upon a successful handshake.
-- Once Android is confirmed 100% stable, mirror exact NFC lifecycle behavior for iOS NameDrop compatibility.
+1. **react-native-ble-advertiser 대신 커스텀 네이티브 모듈 선택**
+   - 이유: GATT 서버와 광고를 단일 모듈에서 제어, Fast Path Manufacturer Data 인코딩 지원
+   - 구현: Android `AliveBlePeripheralModule.kt`, iOS `AliveBlePeripheralModule.swift`
+
+2. **Fast Path 프로토콜 설계**
+   - Manufacturer Data에 userId를 바이너리로 직접 인코딩 (20바이트)
+   - 시그니처: `0xA1 0x1F` (ALIVE 식별)
+   - GATT 연결 없이 ~100ms 교환 → 사용자 체감 "즉시"
+
+3. **NFC 레이어 완전 제거**
+   - 커밋: `5657a17` (feat: NFC 제거 + BLE 양방향 교환 시스템 완성)
+   - 제거된 파일: `src/services/nfc/`, `src/hooks/useNfcHandshake.ts`, `withHCE.js`
+   - 앱 빌드 레이블: `BLE-v2`
+
+4. **GPS 3초 타임아웃 + 최근 위치 폴백**
+   - NFC 시절 실내에서 GPS 무한 대기 버그 있었음
+   - `Promise.race([getCurrentPosition, 3초 setTimeout])` + `getLastKnownPositionAsync` 폴백
+
+### 현재 BLE 구성
+- Service UUID: `A11FE000-C0FF-EC10-8000-000500D10000`
+- RSSI -50 dBm (발견), -35 dBm (자동 교환)
+- Discovery Cache TTL: 5분
+- Deep Link Debounce: 10초
+
+### 알려진 제약사항
+- 양쪽 앱 실행 필수 (백그라운드 BLE 미구현)
+- RSSI ±30% 환경 오차
+- iOS 백그라운드 광고 제한 (UUID만, 이름 제거)
+- 50명+ 동시 감지 시 필터링 필요
+
+### ALIVE Engine 통합 상태
+- 지식그래프 API 연동 완료 (graph-api.ts)
+- 오프라인 큐 구현 완료 (offline-queue.ts, AsyncStorage)
+- 유저 매핑: Supabase users.id === ALIVE Engine being_id (1:1)
+- 만남 시 Person 노드 + MET_AT 엣지 자동 생성
+
+---
+
+*갱신일: 2026-02-25*

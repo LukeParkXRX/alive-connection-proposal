@@ -138,7 +138,39 @@ export const ProfileDetailScreen: React.FC = () => {
         );
     }
 
-    if (!profile) return null;
+    // 프로필 데이터 없음 — 빈 화면 대신 안내 UI 표시
+    if (!profile) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: c.background }]}>
+                <View style={styles.header}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={styles.backButton}
+                        accessibilityRole="button"
+                        accessibilityLabel="뒤로 가기"
+                    >
+                        <Ionicons name="arrow-back" size={24} color={c.textPrimary} />
+                    </Pressable>
+                </View>
+                <View style={styles.notFoundContainer}>
+                    <Ionicons name="person-outline" size={56} color={c.textTertiary} style={{ opacity: 0.4 }} />
+                    <Text style={[styles.notFoundText, { color: c.textSecondary }]}>
+                        프로필을 찾을 수 없습니다
+                    </Text>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={[styles.notFoundButton, { backgroundColor: c.accent }]}
+                        accessibilityRole="button"
+                        accessibilityLabel="뒤로 가기"
+                    >
+                        <Text style={[styles.notFoundButtonText, { color: c.textInverse }]}>
+                            돌아가기
+                        </Text>
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     const isAccepted = status === 'accepted';
 
@@ -471,6 +503,29 @@ const styles = StyleSheet.create({
         borderRadius: borderRadius.lg,
         gap: spacing.sm,
         ...shadows.sm,
+    },
+    // 프로필 없음 상태 UI 스타일
+    notFoundContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: spacing.lg,
+        paddingHorizontal: spacing['2xl'],
+    },
+    notFoundText: {
+        fontSize: typography.fontSize.md,
+        fontWeight: typography.fontWeight.medium,
+        textAlign: 'center',
+    },
+    notFoundButton: {
+        paddingVertical: spacing.md,
+        paddingHorizontal: spacing['2xl'],
+        borderRadius: borderRadius.lg,
+        marginTop: spacing.sm,
+    },
+    notFoundButtonText: {
+        fontSize: typography.fontSize.base,
+        fontWeight: typography.fontWeight.semibold,
     },
     pendingButton: {
         backgroundColor: colors.textTertiary,

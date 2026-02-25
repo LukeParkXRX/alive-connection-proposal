@@ -1,7 +1,7 @@
 /**
  * Graph Store - ALIVE Engine 지식 그래프 상태 관리
  *
- * NFC 핸드셰이크 후 온톨로지 노드 생성, 관계 추가, 메모에서 엔티티 추출 등
+ * BLE 핸드셰이크 후 온톨로지 노드 생성, 관계 추가, 메모에서 엔티티 추출 등
  * 온라인/오프라인 모드 지원, 오프라인 큐를 통한 동기화
  */
 
@@ -61,7 +61,7 @@ interface GraphState {
   initializeGraph: () => Promise<void>;
 
   /**
-   * 노드 생성 - NFC 핸드셰이크 후 호출
+   * 노드 생성 - BLE 핸드셰이크 후 호출
    *
    * @param profile - 상대방 프로필 정보
    * @param interaction - 만남 정보 (위치, 시간, 이벤트)
@@ -202,7 +202,7 @@ export const useGraphStore = create<GraphState>()(
       },
 
       // ========================================================================
-      // 노드 생성 - NFC 핸드셰이크 후 호출
+      // 노드 생성 - BLE 핸드셰이크 후 호출
       // ========================================================================
       addPersonNode: async (profile, interaction) => {
         set({ isLoading: true });

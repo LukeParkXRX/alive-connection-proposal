@@ -9,6 +9,7 @@
 import { BleManager, Device, State } from 'react-native-ble-plx';
 import { logger } from '@/lib/logger';
 import { ALIVE_BLE_CONFIG } from '@/constants/ble';
+import { useAuthStore } from '@/store/useAuthStore';
 import type { DiscoveredDevice } from '@/types/ble';
 
 type DeviceCallback = (device: DiscoveredDevice) => void;
@@ -143,6 +144,8 @@ class BLEScanner {
       const fastUserId = this.tryReadUserIdFromManufacturerData(device);
 
       if (fastUserId) {
+        // 자기 자신의 BLE 신호 무시 (자기 발견 방지)
+        if (this.isSelfDevice(fastUserId)) return;
         logger.log(
           `[BLE Scanner] Fast Path 성공 — userId: ${fastUserId.slice(0, 8)}... (RSSI: ${rssi})`
         );
@@ -155,6 +158,8 @@ class BLEScanner {
       const gattUserId = await this.readUserIdFromDevice(device);
       if (!gattUserId) return;
 
+      // 자기 자신의 BLE 신호 무시 (GATT 폴백에서도 자기 발견 방지)
+      if (this.isSelfDevice(gattUserId)) return;
       logger.log(
         `[BLE Scanner] GATT 폴백 성공 — userId: ${gattUserId.slice(0, 8)}... (RSSI: ${rssi})`
       );
@@ -255,6 +260,19 @@ class BLEScanner {
   }
 
   // ─── 내부 유틸리티 ───
+
+  /**
+   * 발견된 userId가 현재 로그인된 사용자 본인인지 확인
+   * 자기 자신의 BLE 광고 신호를 스캔하는 경우를 방지
+   */
+  private isSelfDevice(discoveredUserId: string): boolean {
+    const myUserId = useAuthStore.getState().dbUser?.id;
+    if (myUserId && myUserId === discoveredUserId) {
+      logger.debug('[BLEScanner] 자기 자신 감지 무시:', myUserId);
+      return true;
+    }
+    return false;
+  }
 
   /** DiscoveredDevice 객체 생성 + 리스너에 전달 */
   private emitDiscoveredDevice(device: Device, userId: string, rssi: number): void {

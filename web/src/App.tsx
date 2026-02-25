@@ -1,5 +1,5 @@
 /**
- * App — ALIVE Business NFC 웹 대시보드 루트 컴포넌트
+ * App — ALIVE Connection 웹 대시보드 루트 컴포넌트
  * 반응형 레이아웃 + 다크모드 지원
  */
 

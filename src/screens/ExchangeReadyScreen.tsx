@@ -389,6 +389,7 @@ const styles = StyleSheet.create({
   recentMeta: {
     fontSize: 13,
   },
+
 });
 
 export default ExchangeReadyScreen;

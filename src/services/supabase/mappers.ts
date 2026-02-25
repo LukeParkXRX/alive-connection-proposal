@@ -101,9 +101,9 @@ export function mapDbInteractionToModel(dbRow: DbInteractionRow): Interaction {
 }
 
 /**
- * DB 조회 실패 시 NFC/BLE 수신 데이터로 만드는 최소 스켈레톤 프로필
+ * DB 조회 실패 시 BLE 수신 데이터로 만드는 최소 스켈레톤 프로필
  * - userId: 반드시 실제 유저 ID (UUID)
- * - partialData: NFC 페이로드 등 부분 정보 (선택)
+ * - partialData: BLE 교환 등 부분 정보 (선택)
  */
 export function createSkeletonProfile(
   userId: string,

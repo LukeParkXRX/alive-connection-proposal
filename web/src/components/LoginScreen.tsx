@@ -74,7 +74,7 @@ export function LoginScreen({ onLogin, onGuestLogin, onEmailLogin }: LoginScreen
           ALIVE
         </h1>
         <p className="text-textSecondary dark:text-gray-400 mb-8 text-sm leading-relaxed px-4">
-          Manage your NFC connections and network from your desktop.
+          Manage your connections and network from your desktop.
         </p>
 
         {/* Google OAuth 버튼 */}

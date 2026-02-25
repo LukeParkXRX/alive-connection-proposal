@@ -21,6 +21,7 @@ import { colors, typography, spacing, borderRadius, shadows } from '@/constants/
 import { supabase } from '@/services/supabase';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { logger } from '@/lib/logger';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,8 +35,7 @@ export const LoginScreen: React.FC = () => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         try {
-            // For Expo, we use the OAuth flow via Supabase
-            // In a real app, you would configure the redirect URL in Supabase dashboard
+            // Supabase OAuth URL 생성 (리다이렉트 URI는 Supabase 대시보드에 등록 필요)
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -49,39 +49,58 @@ export const LoginScreen: React.FC = () => {
 
             if (error) throw error;
 
-            // If data.url exists, open it in the web browser
+            // OAuth URL이 있으면 시스템 브라우저에서 인증 진행
             if (data?.url) {
                 const result = await WebBrowser.openAuthSessionAsync(data.url, 'alive://google-auth');
 
                 if (result.type === 'success' && result.url) {
-                    const { params, errorCode } = getQueryParams(result.url);
-                    if (params.access_token) {
-                        await supabase.auth.setSession({
-                            access_token: params.access_token,
-                            refresh_token: params.refresh_token,
-                        });
+                    // 콜백 URL에서 토큰 파라미터 추출 및 검증
+                    const { params } = getQueryParams(result.url);
+
+                    if (!params.access_token || !params.refresh_token) {
+                        // 필수 토큰이 없으면 인증 실패로 처리
+                        logger.error('OAuth 콜백 URL에 토큰이 없음:', result.url);
+                        Alert.alert('로그인 실패', '인증 응답이 올바르지 않습니다. 다시 시도해주세요.');
+                        return;
                     }
+
+                    await supabase.auth.setSession({
+                        access_token: params.access_token,
+                        refresh_token: params.refresh_token,
+                    });
+                } else if (result.type === 'dismiss' || result.type === 'cancel') {
+                    // 사용자가 브라우저를 직접 닫은 경우 — 오류 아님, 조용히 종료
+                    logger.log('OAuth 브라우저 세션 취소됨 (type:', result.type, ')');
                 }
+                // 그 외 타입은 무시 (예: opened)
             }
         } catch (error: any) {
-            console.error('Login error:', error.message);
-            Alert.alert('Login Failed', 'Could not sign in with Google. Please try again.');
+            logger.error('Google 로그인 오류:', error.message);
+            Alert.alert('로그인 실패', 'Google 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.');
         } finally {
             setLoading(false);
         }
     };
 
-    const getQueryParams = (url: string) => {
-        const query = url.split('#')[1] || url.split('?')[1];
-        if (!query) return { params: {}, errorCode: null };
+    /**
+     * OAuth 콜백 URL에서 쿼리/해시 파라미터를 파싱합니다.
+     * Supabase는 액세스 토큰을 URL 해시(#)에 담아 반환합니다.
+     */
+    const getQueryParams = (url: string): { params: Record<string, string> } => {
+        // 해시(#) 우선, 없으면 쿼리스트링(?) 사용
+        const fragment = url.split('#')[1] || url.split('?')[1];
+        if (!fragment) return { params: {} };
 
         const params: Record<string, string> = {};
-        query.split('&').forEach(part => {
-            const [key, value] = part.split('=');
-            params[key] = value;
+        fragment.split('&').forEach(part => {
+            const eqIdx = part.indexOf('=');
+            if (eqIdx === -1) return; // '=' 없는 잘못된 파라미터 무시
+            const key = decodeURIComponent(part.slice(0, eqIdx));
+            const value = decodeURIComponent(part.slice(eqIdx + 1));
+            if (key) params[key] = value;
         });
 
-        return { params, errorCode: null };
+        return { params };
     };
 
     return (

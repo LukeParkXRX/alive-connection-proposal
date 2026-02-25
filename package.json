@@ -1,7 +1,7 @@
 {
   "name": "alive-connection",
   "version": "1.0.0",
-  "description": "Relationship Intelligence Platform - Zero-Input Networking via NFC",
+  "description": "Relationship Intelligence Platform - Zero-Input Networking via BLE",
   "main": "expo/AppEntry.js",
   "scripts": {
     "start": "expo start",

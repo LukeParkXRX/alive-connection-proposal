@@ -1,7 +1,7 @@
 /**
  * HandshakeSuccess - The Core Connection Experience
  *
- * This is THE moment - when two people connect via NFC.
+ * This is THE moment - when two people connect via BLE.
  * Design philosophy: Minimal, elegant, instant feedback.
  * "The connection should feel magical but not flashy."
  */

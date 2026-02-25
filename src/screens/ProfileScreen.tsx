@@ -14,6 +14,8 @@ import {
   TextInput,
   Switch,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +89,11 @@ export const ProfileScreen: React.FC = () => {
   );
 
   return (
+    // 키보드가 텍스트 입력 필드를 가리지 않도록 KeyboardAvoidingView로 감싸기
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <SafeAreaView style={[styles.container, { backgroundColor: c.background }]} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
@@ -326,6 +333,7 @@ export const ProfileScreen: React.FC = () => {
         <View style={{ height: wp(100) }} />
       </ScrollView>
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 };
 

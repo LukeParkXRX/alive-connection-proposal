@@ -115,7 +115,7 @@ export const NODE_TYPE_CONFIG: Record<OntologyNodeType, { emoji: string; color: 
 };
 
 // ============================================================================
-// 4. RELATION_TYPES - NFC 네트워킹에 필요한 관계 타입
+// 4. RELATION_TYPES - BLE 네트워킹에 필요한 관계 타입
 // ============================================================================
 
 export const RELATION_TYPES = {

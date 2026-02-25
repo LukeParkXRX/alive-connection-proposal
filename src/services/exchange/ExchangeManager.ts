@@ -4,14 +4,19 @@
  * BLE (Primary) + QR (Fallback) 교환 방식 통합 관리.
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '@/lib/logger';
 import BLEExchangeService from '../ble/BLEExchangeService';
 import { supabase } from '../supabase';
 import { mapDbUserToProfile, createSkeletonProfile } from '../supabase/mappers';
 import LocationService from '../location/LocationService';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useConnectionStore } from '@/store/useConnectionStore';
 import type { ExchangeEvent, ExchangeMethod } from '@/types/ble';
 import type { ProfileCard, LocationData, Connection, UserProfile } from '@/types';
+
+/** 오프라인 대기 중인 interaction 저장 키 (AsyncStorage) */
+const PENDING_INTERACTIONS_KEY = 'alive-pending-interactions';
 
 type ExchangeListener = (event: ExchangeEvent) => void;
 
@@ -114,29 +119,36 @@ class ExchangeManager {
         targetUser = createSkeletonProfile(partnerId);
       }
 
-      // 4. Supabase interactions 테이블에 저장
+      // 4. Interaction 저장 — 중복 체크 포함 스토어 메서드 사용 (Fix 2)
+      //    재시도 최대 2회, 1초 간격 적용 (Fix 3)
       const metAt = new Date().toISOString();
-      const { data: interactionData, error: insertError } = await supabase
-        .from('interactions')
-        .insert({
-          source_user_id: myUser.id,
-          target_user_id: partnerId,
-          met_at: metAt,
-          exchange_method: method,
-          location_lat: location?.latitude || 0,
-          location_lng: location?.longitude || 0,
-          location_address: location?.address || null,
-          location_place_name: location?.placeName || null,
-          location_city: location?.city || null,
-          location_country: location?.country || null,
-          status: 'active',
-        })
-        .select()
-        .single();
+      const interactionPayload = {
+        sourceUserId: myUser.id,
+        targetUserId: partnerId,
+        metAt,
+        location: location || { latitude: 0, longitude: 0 },
+      };
 
-      const interactionId = interactionData?.id || `local_${Date.now()}`;
-      if (insertError) {
-        logger.warn('[ExchangeManager] Interaction 저장 실패:', insertError);
+      const MAX_RETRIES = 2;
+      const RETRY_DELAY_MS = 1000;
+      let interactionId: string | null = null;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+        // useConnectionStore.saveInteractionToSupabase — 5분 중복 방지 포함
+        interactionId = await useConnectionStore.getState().saveInteractionToSupabase(interactionPayload);
+        if (interactionId) break;
+
+        if (attempt <= MAX_RETRIES) {
+          logger.warn(`[ExchangeManager] Interaction 저장 실패 — ${attempt}/${MAX_RETRIES}회 재시도 대기 중...`);
+          await new Promise<void>((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        }
+      }
+
+      if (!interactionId) {
+        // 모든 재시도 실패 — 오프라인 대기 큐에 저장하여 추후 동기화
+        logger.warn('[ExchangeManager] 모든 재시도 실패 — 오프라인 대기 큐에 저장');
+        await this.saveToPendingQueue(interactionPayload);
+        interactionId = `local_${Date.now()}`;
       }
 
       // 5. Connection 객체 생성
@@ -171,6 +183,27 @@ class ExchangeManager {
         error: (err as Error).message,
       });
       return null;
+    }
+  }
+
+  /**
+   * 오프라인 대기 큐에 interaction 데이터 저장
+   * Supabase 저장이 완전히 실패했을 때 추후 동기화를 위해 AsyncStorage에 보관
+   */
+  private async saveToPendingQueue(payload: {
+    sourceUserId: string;
+    targetUserId: string;
+    metAt: string;
+    location: LocationData;
+  }): Promise<void> {
+    try {
+      const raw = await AsyncStorage.getItem(PENDING_INTERACTIONS_KEY);
+      const queue: typeof payload[] = raw ? JSON.parse(raw) : [];
+      queue.push(payload);
+      await AsyncStorage.setItem(PENDING_INTERACTIONS_KEY, JSON.stringify(queue));
+      logger.log(`[ExchangeManager] 오프라인 대기 큐 저장 완료 (총 ${queue.length}건)`);
+    } catch (err) {
+      logger.error('[ExchangeManager] 오프라인 대기 큐 저장 실패:', err);
     }
   }
 
