@@ -3,7 +3,7 @@
  * 반응형 레이아웃 + 다크모드 지원
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { supabase } from './lib/supabase';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -14,6 +14,57 @@ import { Sidebar } from './components/Sidebar';
 import { ConnectionDetail } from './components/ConnectionDetail';
 import { ChatPanel } from './components/ChatPanel';
 import { EmptyState } from './components/EmptyState';
+
+/* ---- 게스트 모드 정적 데이터 (모듈 레벨 상수 — 렌더마다 재생성 방지) ---- */
+const GUEST_CONNECTIONS = [
+  {
+    id: 'conn-1',
+    met_at: new Date().toISOString(),
+    location_place_name: 'COEX 스타트업 밋업',
+    location_address: '서울특별시 강남구 삼성동',
+    target_user: {
+      name: 'Demo Connection',
+      title: 'Product Designer',
+      company: 'XRX Labs',
+      bio: 'ALIVE 게스트 대시보드에 오신 것을 환영합니다! BLE 교환으로 연결된 사람들의 프로필과 만남 기록을 여기서 관리할 수 있습니다.',
+      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
+    }
+  },
+  {
+    id: 'conn-2',
+    met_at: new Date(Date.now() - 86400000).toISOString(),
+    location_place_name: '판교 테크노밸리',
+    location_address: '경기도 성남시 분당구 판교역로',
+    target_user: {
+      name: 'Alex Kim',
+      title: 'Backend Engineer',
+      company: 'ALIVE Labs',
+      bio: '분산 시스템과 Knowledge Graph에 관심이 많습니다.',
+      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex'
+    }
+  },
+  {
+    id: 'conn-3',
+    met_at: new Date(Date.now() - 172800000).toISOString(),
+    location_place_name: '역삼 위워크',
+    location_address: '서울특별시 강남구 역삼동',
+    target_user: {
+      name: 'Sarah Park',
+      title: 'UX Researcher',
+      company: 'Naver',
+      bio: '사용자 경험과 관계 데이터 시각화를 연구합니다.',
+      avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah'
+    }
+  }
+];
+
+const GUEST_SESSION = {
+  user: {
+    id: 'guest-user-id',
+    email: 'guest@alive.internal',
+    user_metadata: { full_name: 'Guest User' }
+  }
+};
 
 export default function App() {
   /* ---- 상태 ---- */
@@ -57,13 +108,7 @@ export default function App() {
   }, []);
 
   /* ---- 연결 목록 가져오기 ---- */
-  useEffect(() => {
-    if (session) {
-      fetchConnections();
-    }
-  }, [session]);
-
-  const fetchConnections = async () => {
+  const fetchConnections = useCallback(async () => {
     console.log("ALIVE Dashboard: Fetching connections...");
     try {
       // 1. auth.users.id → public.users.id 매핑
@@ -116,7 +161,13 @@ export default function App() {
     } catch (err) {
       console.error("ALIVE Dashboard: Fetch error", err);
     }
-  };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (session) {
+      fetchConnections();
+    }
+  }, [session, fetchConnections]);
 
   /* ---- 로그인 핸들러 ---- */
   const handleLogin = async () => {
@@ -162,76 +213,32 @@ export default function App() {
     }
   };
 
-  const handleGuestLogin = () => {
+  const handleGuestLogin = useCallback(() => {
     console.log("ALIVE Dashboard: Entering Guest Mode");
-    const guestSession = {
-      user: {
-        id: 'guest-user-id',
-        email: 'guest@alive.internal',
-        user_metadata: { full_name: 'Guest User' }
-      }
-    };
-    setSession(guestSession);
+    setSession(GUEST_SESSION);
+    setConnections(GUEST_CONNECTIONS);
+  }, []);
 
-    setConnections([
-      {
-        id: 'conn-1',
-        met_at: new Date().toISOString(),
-        location_place_name: 'COEX 스타트업 밋업',
-        location_address: '서울특별시 강남구 삼성동',
-        target_user: {
-          name: 'Demo Connection',
-          title: 'Product Designer',
-          company: 'XRX Labs',
-          bio: 'ALIVE 게스트 대시보드에 오신 것을 환영합니다! BLE 교환으로 연결된 사람들의 프로필과 만남 기록을 여기서 관리할 수 있습니다.',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
-        }
-      },
-      {
-        id: 'conn-2',
-        met_at: new Date(Date.now() - 86400000).toISOString(),
-        location_place_name: '판교 테크노밸리',
-        location_address: '경기도 성남시 분당구 판교역로',
-        target_user: {
-          name: 'Alex Kim',
-          title: 'Backend Engineer',
-          company: 'ALIVE Labs',
-          bio: '분산 시스템과 Knowledge Graph에 관심이 많습니다.',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex'
-        }
-      },
-      {
-        id: 'conn-3',
-        met_at: new Date(Date.now() - 172800000).toISOString(),
-        location_place_name: '역삼 위워크',
-        location_address: '서울특별시 강남구 역삼동',
-        target_user: {
-          name: 'Sarah Park',
-          title: 'UX Researcher',
-          company: 'Naver',
-          bio: '사용자 경험과 관계 데이터 시각화를 연구합니다.',
-          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah'
-        }
-      }
-    ]);
-  };
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     if (session?.user?.id === 'guest-user-id') {
       setSession(null);
       setConnections([]);
     } else {
       await supabase.auth.signOut();
     }
-  };
+  }, [session?.user?.id]);
 
   /* ---- 연결 선택 (모바일에서 사이드바 자동 닫기) ---- */
-  const handleSelectConnection = (conn: any) => {
+  const handleSelectConnection = useCallback((conn: any) => {
     setSelectedConnection(conn);
     if (isMobile) {
       setSidebarOpen(false);
     }
-  };
+  }, [isMobile]);
+
+  /* ---- 사이드바 열기/닫기 안정 콜백 ---- */
+  const handleCloseSidebar = useCallback(() => setSidebarOpen(false), []);
+  const handleOpenSidebar = useCallback(() => setSidebarOpen(true), []);
 
   /* ---- 조건부 화면 렌더링 ---- */
   if (loading) return <LoadingScreen />;
@@ -252,7 +259,7 @@ export default function App() {
         onSearchChange={setSearchText}
         onLogout={handleLogout}
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={handleCloseSidebar}
         isDark={isDark}
         onToggleDark={toggleDark}
       />
@@ -262,7 +269,7 @@ export default function App() {
         {/* 모바일 헤더 (햄버거 메뉴) */}
         <div className="md:hidden flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-950 border-b border-border/20 dark:border-gray-800">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={handleOpenSidebar}
             className="p-1 text-textPrimary dark:text-gray-200"
             aria-label={sidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
           >
@@ -280,7 +287,9 @@ export default function App() {
                   <img
                     src={selectedConnection.target_user?.avatar_url}
                     className="w-full h-full object-cover"
-                    alt=""
+                    alt={selectedConnection.target_user?.name || ''}
+                    loading="lazy"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 </div>
                 <div className="min-w-0">

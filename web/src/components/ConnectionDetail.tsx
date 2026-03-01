@@ -3,6 +3,7 @@
  * 반응형: 모바일 w-full, 데스크톱 w-[400px]
  */
 
+import { memo } from 'react';
 import { Clock, Users } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -10,7 +11,7 @@ interface ConnectionDetailProps {
   connection: any;
 }
 
-export function ConnectionDetail({ connection }: ConnectionDetailProps) {
+export const ConnectionDetail = memo(function ConnectionDetail({ connection }: ConnectionDetailProps) {
   return (
     <div className="w-full lg:w-[400px] space-y-6 overflow-y-auto pr-2 custom-scrollbar flex-shrink-0">
       {/* Meeting Context 섹션 */}
@@ -102,4 +103,4 @@ export function ConnectionDetail({ connection }: ConnectionDetailProps) {
       </section>
     </div>
   );
-}
+});

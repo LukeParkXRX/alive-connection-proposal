@@ -3,7 +3,7 @@
  * Supabase Realtime Broadcast 중계 + localStorage 로컬 저장
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Send, Check, CheckCheck, Clock, Trash2, MoreVertical } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateBotResponse, BOT_USER_ID } from '../lib/chatbot';
@@ -53,28 +53,76 @@ function formatDate(ts: number) {
   });
 }
 
-function StatusIcon({ status }: { status: ChatMessage['status'] }) {
+/** 메시지 상태 아이콘 (memo로 불필요한 리렌더 방지) */
+const StatusIcon = memo(function StatusIcon({ status }: { status: ChatMessage['status'] }) {
   if (status === 'sending') return <Clock className="w-3 h-3 opacity-50" />;
   if (status === 'sent') return <Check className="w-3 h-3 opacity-50" />;
   if (status === 'delivered') return <CheckCheck className="w-3 h-3 opacity-50" />;
   if (status === 'read') return <CheckCheck className="w-3 h-3 text-sky-400" />;
   return null;
-}
+});
 
-/** 타이핑 애니메이션 점 3개 */
-function TypingDots() {
+/** 타이핑 애니메이션 점 3개 (memo로 불필요한 리렌더 방지) */
+const TypingDots = memo(function TypingDots() {
   return (
     <div className="flex gap-1 items-center px-4 py-3">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce"
-          style={{ animationDelay: `${i * 150}ms`, animationDuration: '0.8s' }}
+          className={`w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce typing-dot-${i}`}
         />
       ))}
     </div>
   );
-}
+});
+
+/** 메시지 말풍선 (memo로 messages 배열 변경 시 변경된 항목만 리렌더) */
+const MessageBubble = memo(function MessageBubble({
+  msg,
+  isMe,
+  continuation,
+  showTime,
+  showDateHeader,
+  dateLabel,
+}: {
+  msg: ChatMessage;
+  isMe: boolean;
+  continuation: boolean;
+  showTime: boolean;
+  showDateHeader: boolean;
+  dateLabel: string;
+}) {
+  return (
+    <div className="message-item">
+      {showDateHeader && (
+        <div className="text-center my-3">
+          <span className="text-[11px] font-semibold text-textTertiary dark:text-gray-500 bg-backgroundAlt dark:bg-gray-800 px-3 py-1 rounded-full">
+            {dateLabel}
+          </span>
+        </div>
+      )}
+      <div className={`flex ${continuation ? 'mt-0.5' : 'mt-2.5'} ${isMe ? 'justify-end' : 'justify-start'}`}>
+        <div
+          className={`max-w-[75%] px-3.5 py-2 ${
+            isMe
+              ? `bg-accent text-white ${continuation ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-br-sm'}`
+              : `bg-backgroundAlt dark:bg-gray-800 text-textPrimary dark:text-gray-100 ${continuation ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-bl-sm'}`
+          }`}
+        >
+          <p className="text-[15px] leading-snug whitespace-pre-wrap break-words">
+            {msg.content}
+          </p>
+          {showTime && (
+            <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? 'text-white/50' : 'text-textTertiary dark:text-gray-500'}`}>
+              <span className="text-[10px]">{formatTime(msg.timestamp)}</span>
+              {isMe && <StatusIcon status={msg.status} />}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -85,10 +133,21 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  // localStorage 디바운스 저장용 타이머 ref
+  const savePendingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const channelName = getChannelName(myUserId, targetUserId);
   const firstName = connectionName?.split(' ')[0] || '';
   const isBotMode = targetUserId === BOT_USER_ID || targetUserId.startsWith('conn-');
+
+  /** localStorage 쓰기를 300ms 디바운스 — 연속 상태 변경 시 I/O 최소화 */
+  const debouncedSave = useCallback((ch: string, msgs: ChatMessage[]) => {
+    if (savePendingRef.current) clearTimeout(savePendingRef.current);
+    savePendingRef.current = setTimeout(() => {
+      saveLocal(ch, msgs);
+      savePendingRef.current = null;
+    }, 300);
+  }, []);
 
   // 채널 구독 + 로컬 메시지 불러오기
   useEffect(() => {
@@ -105,7 +164,7 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           const next = [...prev, msg];
-          saveLocal(channelName, next);
+          debouncedSave(channelName, next);
           return next;
         });
         channel.send({
@@ -127,7 +186,7 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
               ? { ...m, status: 'read' as const }
               : m
           );
-          saveLocal(channelName, updated);
+          debouncedSave(channelName, updated);
           return updated;
         });
       })
@@ -135,10 +194,15 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
 
     channelRef.current = channel;
     return () => {
+      // 언마운트 시 대기 중인 저장을 즉시 플러시
+      if (savePendingRef.current) {
+        clearTimeout(savePendingRef.current);
+        savePendingRef.current = null;
+      }
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [myUserId, targetUserId, channelName]);
+  }, [myUserId, targetUserId, channelName, debouncedSave]);
 
   // 자동 스크롤
   useEffect(() => {
@@ -173,7 +237,7 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
 
     setMessages((prev) => {
       const next = [...prev, msg];
-      saveLocal(channelName, next);
+      debouncedSave(channelName, next);
       return next;
     });
     setInputText('');
@@ -188,7 +252,7 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
         msg.status = 'sent';
         setMessages((prev) => {
           const updated = prev.map((m) => (m.id === msg.id ? { ...m, status: 'sent' as const } : m));
-          saveLocal(channelName, updated);
+          debouncedSave(channelName, updated);
           return updated;
         });
       } catch { /* 로컬엔 이미 저장됨 */ }
@@ -223,12 +287,12 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
           };
 
           const next = [...readUpdated, botMsg];
-          saveLocal(channelName, next);
+          debouncedSave(channelName, next);
           return next;
         });
       }, botReply.delayMs + 400);
     }
-  }, [inputText, myUserId, targetUserId, channelName, isBotMode]);
+  }, [inputText, myUserId, targetUserId, channelName, isBotMode, debouncedSave]);
 
   // 타이핑 전송
   const handleInputChange = useCallback((text: string) => {
@@ -257,17 +321,24 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
     }
   };
 
-  // 연속 메시지 판단 (같은 발신자 + 2분 이내)
-  const isContinuation = (msg: ChatMessage, idx: number) => {
-    if (idx === 0) return false;
-    const prev = messages[idx - 1];
-    return prev.senderId === msg.senderId && msg.timestamp - prev.timestamp < 120000;
-  };
-
-  const needsDateHeader = (msg: ChatMessage, idx: number) => {
-    if (idx === 0) return true;
-    return new Date(msg.timestamp).toDateString() !== new Date(messages[idx - 1].timestamp).toDateString();
-  };
+  /** 각 메시지의 표시 메타데이터를 미리 계산 — messages 변경 시에만 재계산 */
+  const messageMetadata = useMemo(() =>
+    messages.map((msg, idx) => {
+      const prev = idx > 0 ? messages[idx - 1] : null;
+      const continuation = prev
+        ? prev.senderId === msg.senderId && msg.timestamp - prev.timestamp < 120000
+        : false;
+      const showDateHeader = idx === 0 || new Date(msg.timestamp).toDateString() !== new Date(prev!.timestamp).toDateString();
+      const showTime = !continuation || idx === messages.length - 1 || messages[idx + 1]?.senderId !== msg.senderId;
+      return {
+        continuation,
+        showDateHeader,
+        showTime,
+        dateLabel: showDateHeader ? formatDate(msg.timestamp) : '',
+      };
+    }),
+    [messages]
+  );
 
   return (
     <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 rounded-[2rem] shadow-2xl border border-border/40 dark:border-gray-800 overflow-hidden min-h-0">
@@ -334,41 +405,18 @@ export function ChatPanel({ connectionName, myUserId, targetUserId }: ChatPanelP
           </div>
         ) : (
           messages.map((msg, idx) => {
+            const { continuation, showDateHeader, showTime, dateLabel } = messageMetadata[idx];
             const isMe = msg.senderId === myUserId;
-            const continuation = isContinuation(msg, idx);
-            const showTime = !isContinuation(msg, idx) ||
-              idx === messages.length - 1 ||
-              messages[idx + 1]?.senderId !== msg.senderId;
-
             return (
-              <div key={msg.id}>
-                {needsDateHeader(msg, idx) && (
-                  <div className="text-center my-3">
-                    <span className="text-[11px] font-semibold text-textTertiary dark:text-gray-500 bg-backgroundAlt dark:bg-gray-800 px-3 py-1 rounded-full">
-                      {formatDate(msg.timestamp)}
-                    </span>
-                  </div>
-                )}
-                <div className={`flex ${continuation ? 'mt-0.5' : 'mt-2.5'} ${isMe ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[75%] px-3.5 py-2 ${
-                      isMe
-                        ? `bg-accent text-white ${continuation ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-br-sm'}`
-                        : `bg-backgroundAlt dark:bg-gray-800 text-textPrimary dark:text-gray-100 ${continuation ? 'rounded-2xl rounded-bl-md' : 'rounded-2xl rounded-bl-sm'}`
-                    }`}
-                  >
-                    <p className="text-[15px] leading-snug whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
-                    {showTime && (
-                      <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? 'text-white/50' : 'text-textTertiary dark:text-gray-500'}`}>
-                        <span className="text-[10px]">{formatTime(msg.timestamp)}</span>
-                        {isMe && <StatusIcon status={msg.status} />}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <MessageBubble
+                key={msg.id}
+                msg={msg}
+                isMe={isMe}
+                continuation={continuation}
+                showTime={showTime}
+                showDateHeader={showDateHeader}
+                dateLabel={dateLabel}
+              />
             );
           })
         )}

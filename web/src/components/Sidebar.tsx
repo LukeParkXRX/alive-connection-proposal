@@ -4,6 +4,7 @@
  * 데스크톱: 인라인 relative, 항상 표시
  */
 
+import { memo, useMemo } from 'react';
 import { Users, LogOut, Search, Sun, Moon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/cn';
@@ -21,7 +22,90 @@ interface SidebarProps {
   onToggleDark: () => void;
 }
 
-export function Sidebar({
+interface ConnectionItemProps {
+  conn: any;
+  isSelected: boolean;
+  onSelect: (conn: any) => void;
+}
+
+const ConnectionItem = memo(function ConnectionItem({ conn, isSelected, onSelect }: ConnectionItemProps) {
+  const formattedDate = useMemo(
+    () => format(new Date(conn.met_at), 'MMM d'),
+    [conn.met_at]
+  );
+
+  return (
+    <button
+      key={conn.id}
+      onClick={() => onSelect(conn)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(conn);
+        }
+      }}
+      className={cn(
+        'w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left',
+        isSelected
+          ? 'bg-accent text-white shadow-xl shadow-accent/20 scale-[1.02]'
+          : 'hover:bg-backgroundAlt dark:hover:bg-gray-800 active:scale-95 text-textPrimary dark:text-gray-200'
+      )}
+      role="button"
+      tabIndex={0}
+      aria-selected={isSelected}
+      aria-label={conn.target_user?.name || 'Unknown'}
+    >
+      {/* 아바타 */}
+      <div className="w-12 h-12 rounded-full overflow-hidden bg-accent/10 dark:bg-accent/20 border-2 border-transparent flex-shrink-0 shadow-inner">
+        {conn.target_user?.avatar_url ? (
+          <img
+            src={conn.target_user.avatar_url}
+            className="w-full h-full object-cover"
+            alt=""
+            loading="lazy"
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        ) : (
+          <div
+            className={cn(
+              'w-full h-full flex items-center justify-center text-lg font-bold uppercase',
+              isSelected ? 'text-white' : 'text-accent'
+            )}
+          >
+            {conn.target_user?.name?.[0] || '?'}
+          </div>
+        )}
+      </div>
+
+      {/* 이름 / 직함 */}
+      <div className="flex-1 min-w-0">
+        <div className="flex justify-between items-baseline mb-0.5">
+          <span className="font-bold truncate text-[15px]">
+            {conn.target_user?.name || 'Unknown'}
+          </span>
+          <span
+            className={cn(
+              'text-[10px] font-medium whitespace-nowrap',
+              isSelected ? 'text-white/70' : 'text-textTertiary dark:text-gray-500'
+            )}
+          >
+            {formattedDate}
+          </span>
+        </div>
+        <div
+          className={cn(
+            'text-[13px] truncate font-medium',
+            isSelected ? 'text-white/80' : 'text-textSecondary dark:text-gray-400'
+          )}
+        >
+          {conn.target_user?.title || 'Connection'}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+export const Sidebar = memo(function Sidebar({
   connections,
   selectedConnection,
   onSelectConnection,
@@ -114,81 +198,16 @@ export function Sidebar({
             </div>
           ) : (
             connections.map((conn) => (
-              <button
+              <ConnectionItem
                 key={conn.id}
-                onClick={() => onSelectConnection(conn)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectConnection(conn);
-                  }
-                }}
-                className={cn(
-                  'w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all text-left',
-                  selectedConnection?.id === conn.id
-                    ? 'bg-accent text-white shadow-xl shadow-accent/20 scale-[1.02]'
-                    : 'hover:bg-backgroundAlt dark:hover:bg-gray-800 active:scale-95 text-textPrimary dark:text-gray-200'
-                )}
-                role="button"
-                tabIndex={0}
-                aria-selected={selectedConnection?.id === conn.id}
-                aria-label={conn.target_user?.name || 'Unknown'}
-              >
-                {/* 아바타 */}
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-accent/10 dark:bg-accent/20 border-2 border-transparent flex-shrink-0 shadow-inner">
-                  {conn.target_user?.avatar_url ? (
-                    <img
-                      src={conn.target_user.avatar_url}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
-                  ) : (
-                    <div
-                      className={cn(
-                        'w-full h-full flex items-center justify-center text-lg font-bold uppercase',
-                        selectedConnection?.id === conn.id
-                          ? 'text-white'
-                          : 'text-accent'
-                      )}
-                    >
-                      {conn.target_user?.name?.[0] || '?'}
-                    </div>
-                  )}
-                </div>
-
-                {/* 이름 / 직함 */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-0.5">
-                    <span className="font-bold truncate text-[15px]">
-                      {conn.target_user?.name || 'Unknown'}
-                    </span>
-                    <span
-                      className={cn(
-                        'text-[10px] font-medium whitespace-nowrap',
-                        selectedConnection?.id === conn.id
-                          ? 'text-white/70'
-                          : 'text-textTertiary dark:text-gray-500'
-                      )}
-                    >
-                      {format(new Date(conn.met_at), 'MMM d')}
-                    </span>
-                  </div>
-                  <div
-                    className={cn(
-                      'text-[13px] truncate font-medium',
-                      selectedConnection?.id === conn.id
-                        ? 'text-white/80'
-                        : 'text-textSecondary dark:text-gray-400'
-                    )}
-                  >
-                    {conn.target_user?.title || 'Connection'}
-                  </div>
-                </div>
-              </button>
+                conn={conn}
+                isSelected={selectedConnection?.id === conn.id}
+                onSelect={onSelectConnection}
+              />
             ))
           )}
         </nav>
       </aside>
     </>
   );
-}
+});

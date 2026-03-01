@@ -8,6 +8,14 @@
     <title>ALIVE Dashboard</title>
   </head>
   <body>
+    <script>
+      // 다크모드 깜빡임 방지 (FOUC prevention)
+      (function(){
+        var stored = localStorage.getItem('alive-dark-mode');
+        var isDark = stored !== null ? stored === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) document.documentElement.classList.add('dark');
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -49,3 +49,14 @@ body {
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #48484A;
 }
+
+/* 타이핑 애니메이션 */
+.typing-dot-0 { animation-delay: 0ms; animation-duration: 0.8s; }
+.typing-dot-1 { animation-delay: 150ms; animation-duration: 0.8s; }
+.typing-dot-2 { animation-delay: 300ms; animation-duration: 0.8s; }
+
+/* 메시지 가상화 — 화면 밖 메시지 렌더링 스킵 */
+.message-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 60px;
+}
