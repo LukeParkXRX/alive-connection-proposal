@@ -83,24 +83,6 @@ export interface Connection {
 }
 
 // ============================================
-// App State Types
-// ============================================
-export interface AuthState {
-  isAuthenticated: boolean;
-  user: UserProfile | null;
-  isLoading: boolean;
-}
-
-// ============================================
-// API Response Types
-// ============================================
-export interface ApiResponse<T> {
-  data: T | null;
-  error: string | null;
-  status: 'success' | 'error';
-}
-
-// ============================================
 // Navigation Types
 // ============================================
 export type RootStackParamList = {

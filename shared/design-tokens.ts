@@ -3,41 +3,6 @@
  * 모바일(React Native)과 웹(Tailwind) 양쪽에서 import하여 사용
  */
 
-export const UNIFIED_COLORS = {
-  // Brand
-  accent: '#0052CC',
-  accentLight: '#E6F0FF',
-  accentDark: '#003D99',
-
-  // Backgrounds
-  background: '#FFFFFF',
-  backgroundAlt: '#F9F9F9',
-  backgroundCard: '#FFFFFF',
-
-  // Text
-  textPrimary: '#333333',
-  textSecondary: '#666666',
-  textTertiary: '#999999',
-  textInverse: '#FFFFFF',
-
-  // Borders & Dividers
-  border: '#E5E5E5',
-  borderLight: '#F0F0F0',
-  divider: '#EEEEEE',
-
-  // Semantic
-  success: '#1B7F37',
-  successLight: '#E6F4EA',
-  error: '#D93025',
-  errorLight: '#FDECEA',
-  warning: '#F9AB00',
-  warningLight: '#FEF7E0',
-
-  // Shadows
-  shadow: 'rgba(0, 0, 0, 0.08)',
-  shadowDark: 'rgba(0, 0, 0, 0.12)',
-} as const;
-
 export const DARK_COLORS = {
   accent: '#4D8CE8',
   accentLight: '#1A2E4A',
@@ -66,5 +31,3 @@ export const DARK_COLORS = {
   shadow: 'rgba(0, 0, 0, 0.3)',
   shadowDark: 'rgba(0, 0, 0, 0.5)',
 } as const;
-
-export type ColorToken = typeof UNIFIED_COLORS;

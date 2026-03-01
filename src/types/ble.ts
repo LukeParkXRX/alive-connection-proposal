@@ -2,8 +2,6 @@
  * BLE 관련 타입 정의 — ALIVE Connection
  */
 
-import { BLEState } from '@/constants/ble';
-
 // BLE에서 발견된 기기 정보
 export interface DiscoveredDevice {
   id: string;               // BLE device ID
@@ -88,52 +86,3 @@ export type ExchangeEvent =
   | CompletedExchangeEvent
   | ErrorExchangeEvent;
 
-// 교환 결과 (서버 응답)
-export interface ExchangeResult {
-  exchangeId: string;
-  status: 'pending' | 'completed' | 'rejected';
-  partner: {
-    userId: string;
-    displayName: string;
-    title?: string;
-    company?: string;
-    profileImageUrl?: string;
-    emailPublic?: string;
-    linkedinUrl?: string;
-    aliveLink?: string;
-  };
-  context: {
-    location: {
-      lat: number;
-      lng: number;
-      name?: string;
-      address?: string;
-    };
-    exchangedAt: string;
-    method: ExchangeMethod;
-    eventName?: string;
-  };
-}
-
-// BLE 스토어 상태
-export interface BLEStoreState {
-  state: BLEState;
-  isScanning: boolean;
-  isAdvertising: boolean;
-  discoveredDevices: DiscoveredDevice[];
-  currentExchange: ExchangeEvent | null;
-  error: string | null;
-}
-
-// 교환 요청 (서버 POST /exchanges body)
-export interface CreateExchangeRequest {
-  partnerId: string;
-  method: ExchangeMethod;
-  location: {
-    lat: number;
-    lng: number;
-    accuracy?: number;
-  };
-  cardId?: string;
-  eventName?: string;
-}

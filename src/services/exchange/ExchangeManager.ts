@@ -42,8 +42,47 @@ class ExchangeManager {
     return this.instance;
   }
 
+  // ─── 분리된 메서드 (광고/스캔 독립 제어) ───
+
+  /** BLE 권한 일괄 요청 */
+  async requestPermissions(): Promise<boolean> {
+    return this.bleService.requestAllPermissions();
+  }
+
+  /** 광고만 시작 — 다른 기기가 나를 발견 가능 */
+  async startAdvertisingOnly(userId: string): Promise<boolean> {
+    // 이벤트 리스너 등록 (아직 안 되어있으면)
+    if (!this.bleCleanup) {
+      this.bleCleanup = this.bleService.on((event: ExchangeEvent) => {
+        this.handleExchangeEvent(event);
+      });
+    }
+    return this.bleService.startAdvertising(userId);
+  }
+
+  /** 스캔만 시작 — 근처 기기 탐색 */
+  async startScanningOnly(): Promise<boolean> {
+    // 이벤트 리스너 등록 (아직 안 되어있으면)
+    if (!this.bleCleanup) {
+      this.bleCleanup = this.bleService.on((event: ExchangeEvent) => {
+        this.handleExchangeEvent(event);
+      });
+    }
+    return this.bleService.startScanning();
+  }
+
+  /** 스캔만 중지 (광고는 유지) */
+  stopScanningOnly(): void {
+    this.bleService.stopScanning();
+  }
+
+  /** 광고 중인지 확인 */
+  getIsAdvertising(): boolean {
+    return this.bleService.isAdvertising();
+  }
+
   /**
-   * 교환 모드 시작 — BLE 스캔 + 광고 동시 시작
+   * 교환 모드 시작 — BLE 스캔 + 광고 동시 시작 (기존 호환)
    */
   async startExchangeMode(userId: string, _profileCard: ProfileCard): Promise<boolean> {
     if (this.isActive) {
